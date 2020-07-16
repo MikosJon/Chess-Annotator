@@ -21,11 +21,22 @@ WHITE_PAWN_MOVES = [(1, -1), (1, 0), (2, 0), (1, 1)]
 BLACK_PAWN_MOVES = [(-1, -1), (-1, 0), (-2, 0), (-1, 1)]
 
 TO_WHITE_PIECE = {
-    Name.King: '♔', Name.Queen: '♕', Name.Rook: '♖', Name.Bishop: '♗', Name.Knight: '♘', Name.Pawn: '♙'
+    Name.King:   '\u2654',
+    Name.Queen:  '\u2655',
+    Name.Rook:   '\u2656',
+    Name.Bishop: '\u2657',
+    Name.Knight: '\u2658',
+    Name.Pawn:   '\u2659',
 }
 TO_BLACK_PIECE = {
-    Name.King: '♚', Name.Queen: '♛', Name.Rook: '♜', Name.Bishop: '♝', Name.Knight: '♞', Name.Pawn: '♟︎'
+    Name.King:   '\u265A',
+    Name.Queen:  '\u265B',
+    Name.Rook:   '\u265C',
+    Name.Bishop: '\u265D',
+    Name.Knight: '\u265E',
+    Name.Pawn:   '\u265F',
 }
+
 
 class Figure:
     def __init__(self, name, color, position, possible_moves):
@@ -42,6 +53,8 @@ class Figure:
 
     def as_name(self):
         return self.color.name + ' ' + self.name.name
+
+
 class Game:
     def __init__(self):
         self.in_play = []
@@ -124,20 +137,27 @@ class Game:
 
         return True
 
+    @staticmethod
+    def to_figurine_notation(figure, target):
+        if figure.name == Name.Pawn:
+            return 'abcdefgh'[target[1] - 1] + str(target[0])
+        return figure.as_piece() + 'abcdefgh'[target[1] - 1] + str(target[0])
+
+
 game = Game()
 
 # simple visualization
 board = [[' '] * 8 for _ in range(8)]
-for figure in game.in_play:
-    row, col = figure.position
-    board[row-1][col-1] = figure.as_piece()
+for fig in game.in_play:
+    row, col = fig.position
+    board[row-1][col-1] = fig.as_piece()
 
-for row in board:
+for row in reversed(board):
     print(''.join(row))
 
-# show all legal starting moves
+# print all legal starting moves
 for row in range(1, 9):
     for col in range(1, 9):
         for fig in game.in_play:
             if game.is_legal(fig, (row, col)):
-                print(fig.as_name(), (row, col))
+                print(game.to_figurine_notation(fig, (row, col)))
