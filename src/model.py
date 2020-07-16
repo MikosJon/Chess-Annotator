@@ -1,4 +1,16 @@
-NAMES = {'king': 'K', 'queen': 'Q', 'rook': 'R', 'bishop': 'B', 'knight': 'N', 'pawn': 'P'}
+from enum import Enum, auto
+
+class Name(Enum):
+    King = auto()
+    Queen = auto()
+    Rook = auto()
+    Bishop = auto()
+    Knight = auto()
+    Pawn = auto()
+
+class Color(Enum):
+    White = auto()
+    Black = auto()
 
 KING_MOVES       = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 ROOK_MOVES       = [(0, x) for x in range(-7, 8) if x != 0] + [(x, 0) for x in range(-7, 8) if x != 0]
@@ -8,13 +20,28 @@ KNIGHT_MOVES     = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2)
 WHITE_PAWN_MOVES = [(1, -1), (1, 0), (2, 0), (1, 1)]
 BLACK_PAWN_MOVES = [(-1, -1), (-1, 0), (-2, 0), (-1, 1)]
 
-class Figure:
-    def __init__(self, name, possible_moves, position, color):
-        self.name = name
-        self.possible_moves = possible_moves
-        self.position = position
-        self.color = color
+TO_WHITE_PIECE = {
+    Name.King: '♔', Name.Queen: '♕', Name.Rook: '♖', Name.Bishop: '♗', Name.Knight: '♘', Name.Pawn: '♙'
+}
+TO_BLACK_PIECE = {
+    Name.King: '♚', Name.Queen: '♛', Name.Rook: '♜', Name.Bishop: '♝', Name.Knight: '♞', Name.Pawn: '♟︎'
+}
 
+class Figure:
+    def __init__(self, name, color, position, possible_moves):
+        self.name = name
+        self.color = color
+        self.position = position
+        self.possible_moves = possible_moves
+
+    def as_piece(self):
+        if self.color == Color.White:
+            return TO_WHITE_PIECE[self.name]
+        else:
+            return TO_BLACK_PIECE[self.name]
+
+    def as_name(self):
+        return self.color.name + ' ' + self.name.name
 class Game:
     def __init__(self):
         self.in_play = []
@@ -22,31 +49,31 @@ class Game:
         self.pos_white = []
         self.pos_black = []
 
-        self.add_figure(Figure(NAMES['king']  , KING_MOVES  , (1, 5), 'W'))   # white king
-        self.add_figure(Figure(NAMES['queen'] , QUEEN_MOVES , (1, 4), 'W'))   # white queen
-        self.add_figure(Figure(NAMES['rook']  , ROOK_MOVES  , (1, 1), 'W'))   # white rook on a1
-        self.add_figure(Figure(NAMES['rook']  , ROOK_MOVES  , (1, 8), 'W'))   # white rook on h1
-        self.add_figure(Figure(NAMES['bishop'], BISHOP_MOVES, (1, 3), 'W'))   # white dark-squared bishop
-        self.add_figure(Figure(NAMES['bishop'], BISHOP_MOVES, (1, 6), 'W'))   # white light-squared bishop
-        self.add_figure(Figure(NAMES['knight'], KNIGHT_MOVES, (1, 2), 'W'))   # white knight on b1
-        self.add_figure(Figure(NAMES['knight'], KNIGHT_MOVES, (1, 7), 'W'))   # white knight on g1
+        self.add_figure(Figure(Name.King  , Color.White, (1, 5), KING_MOVES))
+        self.add_figure(Figure(Name.Queen , Color.White, (1, 4), QUEEN_MOVES))
+        self.add_figure(Figure(Name.Rook  , Color.White, (1, 1), ROOK_MOVES))
+        self.add_figure(Figure(Name.Rook  , Color.White, (1, 8), ROOK_MOVES))
+        self.add_figure(Figure(Name.Bishop, Color.White, (1, 3), BISHOP_MOVES))
+        self.add_figure(Figure(Name.Bishop, Color.White, (1, 6), BISHOP_MOVES))
+        self.add_figure(Figure(Name.Knight, Color.White, (1, 2), KNIGHT_MOVES))
+        self.add_figure(Figure(Name.Knight, Color.White, (1, 7), KNIGHT_MOVES))
         for i in range(1, 9):
-            self.add_figure(Figure(NAMES['pawn'], WHITE_PAWN_MOVES, (2, i), 'W'))   # white pawns
+            self.add_figure(Figure(Name.Pawn, Color.White, (2, i), WHITE_PAWN_MOVES))
 
-        self.add_figure(Figure(NAMES['king']  , KING_MOVES  , (8, 5), 'B'))   # black king
-        self.add_figure(Figure(NAMES['queen'] , QUEEN_MOVES , (8, 4), 'B'))   # black queen
-        self.add_figure(Figure(NAMES['rook']  , ROOK_MOVES  , (8, 1), 'B'))   # black rook on a8
-        self.add_figure(Figure(NAMES['rook']  , ROOK_MOVES  , (8, 8), 'B'))   # black rook on h8
-        self.add_figure(Figure(NAMES['bishop'], BISHOP_MOVES, (8, 3), 'B'))   # black light-squared bishop
-        self.add_figure(Figure(NAMES['bishop'], BISHOP_MOVES, (8, 6), 'B'))   # black dark-squared bishop
-        self.add_figure(Figure(NAMES['knight'], KNIGHT_MOVES, (8, 2), 'B'))   # black knight on b8
-        self.add_figure(Figure(NAMES['knight'], KNIGHT_MOVES, (8, 7), 'B'))   # black knight on g8
+        self.add_figure(Figure(Name.King  , Color.Black, (8, 5), KING_MOVES))
+        self.add_figure(Figure(Name.Queen , Color.Black, (8, 4), QUEEN_MOVES))
+        self.add_figure(Figure(Name.Rook  , Color.Black, (8, 1), ROOK_MOVES))
+        self.add_figure(Figure(Name.Rook  , Color.Black, (8, 8), ROOK_MOVES))
+        self.add_figure(Figure(Name.Bishop, Color.Black, (8, 3), BISHOP_MOVES))
+        self.add_figure(Figure(Name.Bishop, Color.Black, (8, 6), BISHOP_MOVES))
+        self.add_figure(Figure(Name.Knight, Color.Black, (8, 2), KNIGHT_MOVES))
+        self.add_figure(Figure(Name.Knight, Color.Black, (8, 7), KNIGHT_MOVES))
         for i in range(1, 9):
-            self.add_figure(Figure(NAMES['pawn'], BLACK_PAWN_MOVES, (7, i), 'B'))   # black pawns
+            self.add_figure(Figure(Name.Pawn, Color.Black, (7, i), BLACK_PAWN_MOVES))
 
     def add_figure(self, figure):
         self.in_play.append(figure)
-        if figure.color == 'W':
+        if figure.color == Color.White:
             self.pos_white.append(figure.position)
         else:
             self.pos_black.append(figure.position)
@@ -70,24 +97,24 @@ class Game:
         else:
             dy = move[1] // abs(move[1])
 
-        if figure.color == 'W' and target in self.pos_white:
+        if figure.color == Color.White and target in self.pos_white:
             return False
-        if figure.color == 'B' and target in self.pos_black:
+        if figure.color == Color.Black and target in self.pos_black:
             return False
 
-        if figure.name == NAMES['knight']:
+        if figure.name == Name.Knight:
             return True
 
-        if figure.name == NAMES['pawn']:
+        if figure.name == Name.Pawn:
             if move_size == 2:
-                if figure.color == 'W' and curr_position[0] != 2:
+                if figure.color == Color.White and curr_position[0] != 2:
                     return False
-                if figure == 'B' and curr_position[0] != 7:
+                if figure == Color.Black and curr_position[0] != 7:
                     return False
             if move[0] != 0 and move[1] != 0:
-                if figure.color == 'W' and target not in self.pos_black:
+                if figure.color == Color.White and target not in self.pos_black:
                     return False
-                if figure.color == 'B' and target not in self.pos_white:
+                if figure.color == Color.Black and target not in self.pos_white:
                     return False
 
         for i in range(1, move_size):
@@ -103,7 +130,7 @@ game = Game()
 board = [[' '] * 8 for _ in range(8)]
 for figure in game.in_play:
     row, col = figure.position
-    board[row-1][col-1] = figure.name
+    board[row-1][col-1] = figure.as_piece()
 
 for row in board:
     print(''.join(row))
@@ -113,4 +140,4 @@ for row in range(1, 9):
     for col in range(1, 9):
         for fig in game.in_play:
             if game.is_legal(fig, (row, col)):
-                print(fig.name, (row, col))
+                print(fig.as_name(), (row, col))
