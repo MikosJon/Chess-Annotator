@@ -265,8 +265,8 @@ class Game:
         moves = []
         for row in range(1, 9):
             for col in range(1, 9):
-                for fig in game.in_play:
-                    if fig.color == color and game.is_legal(fig, (row, col)):
+                for fig in self.in_play:
+                    if fig.color == color and self.is_legal(fig, (row, col)):
                         info = self.get_info(fig, (row, col))
                         moves.append((fig, (row, col), info))
         return moves
@@ -307,8 +307,7 @@ class Game:
                     if fig.file == figure.file:
                         move_info.file = True
 
-        captured_figure = self.get_figure_by_pos(target)
-        if captured_figure:
+        if self.get_figure_by_pos(target) is not None:
             move_info.captures = True
         return move_info
 
