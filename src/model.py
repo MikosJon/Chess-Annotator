@@ -1,5 +1,17 @@
 from enum import Enum, auto
+from dataclasses import dataclass
 from random import choice
+
+@dataclass
+class MoveInfo:
+    captures = False
+    check = False
+    mate = False
+    file = False
+    unique = True
+    rank = False
+    promotion = False
+
 class Name(Enum):
     King = auto()
     Queen = auto()
@@ -11,6 +23,11 @@ class Name(Enum):
 class Color(Enum):
     White = auto()
     Black = auto()
+
+def other_color(color):
+    if color == Color.White:
+        return Color.Black
+    return Color.White
 
 KING_MOVES       = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 ROOK_MOVES       = [(0, x) for x in range(-7, 8) if x != 0] + [(x, 0) for x in range(-7, 8) if x != 0]
@@ -144,7 +161,6 @@ class Game:
         self.move_figure_to(figure, starting_position)
         return answer
 
-
     def is_move_possible(self, figure, target):
         move = (target[0] - figure.position[0], target[1] - figure.position[1])
         number_of_moved_squares = max(abs(move[0]), abs(move[1]))
@@ -194,31 +210,47 @@ class Game:
 
         return True
 
-    def move_figure_to(self, figure, target):
-        for fig in self.in_play:
-            if fig.position == target:
-                self.remove_from_play(fig)
-                break
+    def move_figure_to(self, figure, target, *, return_notation=False):
+        if return_notation:
+            info = self.get_info(figure, target)
+            notation = game.to_figurine_notation(figure, target, info)
+
+        captured_figure = self.get_figure_by_pos(target)
+        if captured_figure:
+            self.remove_from_play(captured_figure)
+
         figure.position = target
         self.update_positions()
 
+        if return_notation:
+            return notation
+        return None
 
     @staticmethod
-    def to_figurine_notation(figure, target, *, captures=False, check=False, mate=False, file=False, rank=False):
+    def to_figurine_notation(figure, target, info):
         out = ''
-        if figure.name != Name.Pawn:
+        if figure.name == Name.Pawn:
+            if info.captures:
+                out += figure.file
+                out += 'x'
+        else:
             out += figure.as_piece()
-        if file:
-            out += figure.file
-        if rank:
-            out += figure.rank
-        if captures:
-            out += 'x'
+            if not info.unique:
+                if not info.file:
+                    out += figure.file
+                elif not info.rank:
+                    out += str(figure.rank)
+                else:
+                    out += figure.file + str(figure.rank)
+            if info.captures:
+                out += 'x'
+
         out += 'abcdefgh'[target[1] - 1] + str(target[0])
-        if check:
+        if info.check and not info.mate:
             out += '+'
-        if mate:
+        if info.mate:
             out += '#'
+
         return out
 
     def print_state(self):
@@ -230,13 +262,55 @@ class Game:
             print(''.join(row))
 
     def all_legal_moves(self, color):
-        moves = set()
+        moves = []
         for row in range(1, 9):
             for col in range(1, 9):
                 for fig in game.in_play:
                     if fig.color == color and game.is_legal(fig, (row, col)):
-                        moves.add((fig, (row, col)))
+                        info = self.get_info(fig, (row, col))
+                        moves.append((fig, (row, col), info))
         return moves
+
+    def all_legal_moves_after(self, figure, target, *, color=None):
+        if color is None:
+            color = other_color(figure.color)
+
+        removed_piece = self.get_figure_by_pos(target)
+        if removed_piece:
+            self.remove_from_play(removed_piece)
+        starting_position = figure.position
+        self.move_figure_to(figure, target)
+
+        moves = self.all_legal_moves(color)
+
+        if removed_piece:
+            self.add_figure(removed_piece)
+            self.captured.remove(removed_piece)
+        self.move_figure_to(figure, starting_position)
+        return moves
+
+    def get_info(self, figure, target):
+        move_info = MoveInfo()
+        move_info.check = self.is_king_in_check_after(figure, target, color=other_color(figure.color))
+        if move_info.check:
+            if len(self.all_legal_moves_after(figure, target, color=other_color(figure.color))) == 0:
+                move_info.mate = True
+
+        same_pieces = self.get_figures_by_name(figure.name, figure.color)
+        same_pieces.remove(figure)
+        if same_pieces:
+            for fig in same_pieces:
+                if self.is_legal(fig, target):
+                    move_info.unique = False
+                    if fig.rank == figure.rank:
+                        move_info.rank = True
+                    if fig.file == figure.file:
+                        move_info.file = True
+
+        captured_figure = self.get_figure_by_pos(target)
+        if captured_figure:
+            move_info.captures = True
+        return move_info
 
     def get_figures_by_name(self, name, color):
         out = []
@@ -255,16 +329,13 @@ game = Game()
 
 color = Color.White
 for asdf in range(50):
-    all_legal_moves = list(game.all_legal_moves(color))
-    random_move = choice(all_legal_moves)
+    all_legal_moves = game.all_legal_moves(color)
+    figure, target, info = choice(all_legal_moves)
 
-    game.move_figure_to(*random_move)
-    print(game.to_figurine_notation(*random_move))
-    print([game.to_figurine_notation(*move) for move in all_legal_moves])
+    notation = game.move_figure_to(figure, target, return_notation=True)
+    print(notation)
+    print(' '.join(sorted([game.to_figurine_notation(*move) for move in all_legal_moves])))
     game.print_state()
     print()
 
-    if color == Color.White:
-        color = Color.Black
-    else:
-        color = Color.White
+    color = other_color(color)
