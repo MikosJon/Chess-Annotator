@@ -1,5 +1,5 @@
 from enum import Enum, auto
-
+from random import choice
 class Name(Enum):
     King = auto()
     Queen = auto()
@@ -45,6 +45,14 @@ class Figure:
         self.position = position
         self.possible_moves = possible_moves
 
+    @property
+    def rank(self):
+        return self.position[0]
+
+    @property
+    def file(self):
+        return 'abcdefgh'[self.position[1] - 1]
+
     def as_piece(self):
         if self.color == Color.White:
             return TO_WHITE_PIECE[self.name]
@@ -57,10 +65,10 @@ class Figure:
 
 class Game:
     def __init__(self):
-        self.in_play = []
-        self.captured = []
-        self.pos_white = []
-        self.pos_black = []
+        self.in_play = set()
+        self.captured = set()
+        self.pos_white = set()
+        self.pos_black = set()
 
         self.add_figure(Figure(Name.King  , Color.White, (1, 5), KING_MOVES))
         self.add_figure(Figure(Name.Queen , Color.White, (1, 4), QUEEN_MOVES))
@@ -85,15 +93,28 @@ class Game:
             self.add_figure(Figure(Name.Pawn, Color.Black, (7, i), BLACK_PAWN_MOVES))
 
     def add_figure(self, figure):
-        self.in_play.append(figure)
-        if figure.color == Color.White:
-            self.pos_white.append(figure.position)
-        else:
-            self.pos_black.append(figure.position)
+        self.in_play.add(figure)
+        self.update_positions()
+
+    def remove_from_play(self, figure):
+        self.in_play.remove(figure)
+        self.update_positions()
+        self.captured.add(figure)
+
+    def update_positions(self):
+        new_white = set()
+        new_black = set()
+        for figure in self.in_play:
+            if figure.color == Color.White:
+                new_white.add(figure.position)
+            else:
+                new_black.add(figure.position)
+        self.pos_white = new_white
+        self.pos_black = new_black
 
     def is_legal(self, figure, target):
         move = (target[0] - figure.position[0], target[1] - figure.position[1])
-        move_size = max(abs(move[0]), abs(move[1]))
+        number_of_moved_squares = max(abs(move[0]), abs(move[1]))
         curr_position = figure.position
 
         if target[0] not in range(1, 9) or target[1] not in range(1, 9):
@@ -119,7 +140,7 @@ class Game:
             return True
 
         if figure.name == Name.Pawn:
-            if move_size == 2:
+            if number_of_moved_squares == 2:
                 if figure.color == Color.White and curr_position[0] != 2:
                     return False
                 if figure == Color.Black and curr_position[0] != 7:
@@ -130,34 +151,95 @@ class Game:
                 if figure.color == Color.Black and target not in self.pos_white:
                     return False
 
-        for i in range(1, move_size):
+        for i in range(1, number_of_moved_squares):
             test_position = (curr_position[0] + i * dx, curr_position[1] + i * dy)
             if test_position in self.pos_white or test_position in self.pos_black:
                 return False
 
         return True
 
+    def move_figure_to(self, figure, target):
+        for fig in self.in_play:
+            if fig.position == target:
+                self.remove_from_play(fig)
+                break
+        figure.position = target
+        self.update_positions()
+
+
     @staticmethod
-    def to_figurine_notation(figure, target):
-        if figure.name == Name.Pawn:
-            return 'abcdefgh'[target[1] - 1] + str(target[0])
-        return figure.as_piece() + 'abcdefgh'[target[1] - 1] + str(target[0])
+    def to_figurine_notation(figure, target, *, captures=False, check=False, mate=False, file=False, rank=False):
+        out = ''
+        if figure.name != Name.Pawn:
+            out += figure.as_piece()
+            if file:
+                out += figure.file
+            if rank:
+                out += figure.rank
+            if captures:
+                out += 'x'
+            out += 'abcdefgh'[target[1] - 1] + str(target[0])
+            if check and not mate:
+                out += '+'
+            if mate:
+                out += '#'
+        else:
+            if captures:
+                out += figure.file + 'x'
+            out += 'abcdefgh'[target[1] - 1] + str(target[0])
+            if check and not mate:
+                out += '+'
+            if mate:
+                out += '#'
+        return out
+
+
+    def print_state(self):
+        board = [['-'] * 8 for _ in range(8)]
+        for fig in self.in_play:
+            row, col = fig.position
+            board[row-1][col-1] = fig.as_piece()
+        for row in reversed(board):
+            print(''.join(row))
+
+    def all_legal_moves(self, color):
+        moves = set()
+        for row in range(1, 9):
+            for col in range(1, 9):
+                for fig in game.in_play:
+                    if fig.color == color and game.is_legal(fig, (row, col)):
+                        moves.add((fig, (row, col)))
+        return moves
+
+    def get_figures_by_name(self, name, color):
+        out = []
+        for fig in self.in_play:
+            if fig.name == name and fig.color == color:
+                out.append(fig)
+        return out
+
+    def get_figure_by_pos(self, pos):
+        out = []
+        for fig in self.in_play:
+            if fig.position == pos:
+                out += fig
+        return out
 
 
 game = Game()
 
-# simple visualization
-board = [[' '] * 8 for _ in range(8)]
-for fig in game.in_play:
-    row, col = fig.position
-    board[row-1][col-1] = fig.as_piece()
+color = Color.White
+for asdf in range(50):
+    all_legal_moves = list(game.all_legal_moves(color))
+    random_move = choice(all_legal_moves)
 
-for row in reversed(board):
-    print(''.join(row))
+    game.move_figure_to(*random_move)
+    print(game.to_figurine_notation(*random_move))
+    print([game.to_figurine_notation(*move) for move in all_legal_moves])
+    game.print_state()
+    print()
 
-# print all legal starting moves
-for row in range(1, 9):
-    for col in range(1, 9):
-        for fig in game.in_play:
-            if game.is_legal(fig, (row, col)):
-                print(game.to_figurine_notation(fig, (row, col)))
+    if color == Color.White:
+        color = Color.Black
+    else:
+        color = Color.White
