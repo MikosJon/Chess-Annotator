@@ -113,6 +113,39 @@ class Game:
         self.pos_black = new_black
 
     def is_legal(self, figure, target):
+        return self.is_move_possible(figure, target) and not self.is_king_in_check_after(figure, target)
+
+    def is_king_in_check_now(self, color):
+        king = self.get_figures_by_name(Name.King, color)[0]
+        for fig in self.in_play:
+            if fig.color == color:
+                continue
+            if self.is_move_possible(fig, king.position):
+                return True
+        return False
+
+    def is_king_in_check_after(self, figure, target,  *, color=None):
+        if color is None:
+            color = figure.color
+
+        king = self.get_figures_by_name(Name.King, color)[0]
+        removed_piece = self.get_figure_by_pos(target)
+
+        if removed_piece:
+            self.remove_from_play(removed_piece)
+        starting_position = figure.position
+        self.move_figure_to(figure, target)
+
+        answer = self.is_king_in_check_now(color)
+
+        if removed_piece:
+            self.add_figure(removed_piece)
+            self.captured.remove(removed_piece)
+        self.move_figure_to(figure, starting_position)
+        return answer
+
+
+    def is_move_possible(self, figure, target):
         move = (target[0] - figure.position[0], target[1] - figure.position[1])
         number_of_moved_squares = max(abs(move[0]), abs(move[1]))
         curr_position = figure.position
@@ -150,6 +183,9 @@ class Game:
                     return False
                 if figure.color == Color.Black and target not in self.pos_white:
                     return False
+            else:
+                if target in self.pos_black or target in self.pos_white:
+                    return False
 
         for i in range(1, number_of_moved_squares):
             test_position = (curr_position[0] + i * dx, curr_position[1] + i * dy)
@@ -172,27 +208,18 @@ class Game:
         out = ''
         if figure.name != Name.Pawn:
             out += figure.as_piece()
-            if file:
-                out += figure.file
-            if rank:
-                out += figure.rank
-            if captures:
-                out += 'x'
-            out += 'abcdefgh'[target[1] - 1] + str(target[0])
-            if check and not mate:
-                out += '+'
-            if mate:
-                out += '#'
-        else:
-            if captures:
-                out += figure.file + 'x'
-            out += 'abcdefgh'[target[1] - 1] + str(target[0])
-            if check and not mate:
-                out += '+'
-            if mate:
-                out += '#'
+        if file:
+            out += figure.file
+        if rank:
+            out += figure.rank
+        if captures:
+            out += 'x'
+        out += 'abcdefgh'[target[1] - 1] + str(target[0])
+        if check:
+            out += '+'
+        if mate:
+            out += '#'
         return out
-
 
     def print_state(self):
         board = [['-'] * 8 for _ in range(8)]
@@ -219,11 +246,9 @@ class Game:
         return out
 
     def get_figure_by_pos(self, pos):
-        out = []
         for fig in self.in_play:
             if fig.position == pos:
-                out += fig
-        return out
+                return fig
 
 
 game = Game()
