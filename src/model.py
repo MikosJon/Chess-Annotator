@@ -29,6 +29,14 @@ def other_color(color):
         return Color.Black
     return Color.White
 
+def pos_to_square(position):
+    row, col = position
+    return 'abcdefgh'[col - 1] + str(row)
+
+def square_to_pos(square):
+    return (int(square[-1]), 'abcdefgh'.index(square[-2]) + 1)
+
+
 KING_MOVES       = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 ROOK_MOVES       = [(0, x) for x in range(-7, 8) if x != 0] + [(x, 0) for x in range(-7, 8) if x != 0]
 BISHOP_MOVES     = [(x, x) for x in range(-7, 8) if x != 0] + [(x, -x) for x in range(-7, 8) if x != 0]
@@ -54,7 +62,28 @@ TO_BLACK_PIECE = {
     Name.Pawn:   '\u265F',
 }
 
+FROM_ALGEBRAIC = {
+    'K': Name.King,
+    'Q': Name.Queen,
+    'R': Name.Rook,
+    'B': Name.Bishop,
+    'N': Name.Knight
+}
+FROM_FIGURINE = {
+    '\u2654': (Name.King, Color.White),
+    '\u2655': (Name.Queen, Color.White),
+    '\u2656': (Name.Rook, Color.White),
+    '\u2657': (Name.Bishop, Color.White),
+    '\u2658': (Name.Knight, Color.White),
+    '\u2659': (Name.Pawn, Color.White),
 
+    '\u265A': (Name.King, Color.Black),
+    '\u265B': (Name.Queen, Color.Black),
+    '\u265C': (Name.Rook, Color.Black),
+    '\u265D': (Name.Bishop, Color.Black),
+    '\u265E': (Name.Knight, Color.Black),
+    '\u265F': (Name.Pawn, Color.Black)
+}
 class Figure:
     def __init__(self, name, color, position, possible_moves):
         self.name = name
@@ -252,6 +281,65 @@ class Game:
             out += '#'
 
         return out
+
+    def make_move_from_notation(self, notation, color=None):
+        piece, color, target, info = self.deconstruct_notation(notation, color)
+
+        figures = self.get_figures_by_name(piece, color)
+        possible_figures = []
+
+        if len(figures) == 1:
+            figure = figures[0]
+
+            if not self.is_legal(figure, target):
+                print('Illegal move')
+                return None
+
+            self.move_figure_to(figure, target)
+        else:
+            for figure in figures:
+                if not self.is_legal(figure, target):
+                    continue
+                if len(info) != 0:
+                    if info[0] in 'abcdefgh' and figure.file != info[0]:
+                        continue
+                    if info[-1] in range(1, 9) and figure.rank != info[-1]:
+                        continue
+                possible_figures.append(figure)
+            if len(possible_figures) == 0:
+                print('Illegal move')
+            elif len(possible_figures) >= 2:
+                print('Not enough info')
+            else:
+                self.move_figure_to(possible_figures[0], target)
+
+    def deconstruct_notation(self, notation, color=None):
+        notation.remove('+')
+        notation.remove('#')
+        target = square_to_pos(notation[-2:])
+
+        if notation[0].isascii():
+            if color is None:
+                print('Missing color')
+                return None
+
+            if notation[0] not in 'KQRBN':
+                piece = Name.Pawn
+                info = notation[:-2]
+            else:
+                piece = FROM_ALGEBRAIC[notation[0]]
+                info = notation[1:-2]
+
+            return piece, color, target, info
+
+        else:
+            piece, color = FROM_FIGURINE[notation[0]]
+            if piece == Name.Pawn:
+                info = notation[:-2]
+            else:
+                info = notation[1:-2]
+
+            return piece, color, target, info
 
     def print_state(self):
         board = [['-'] * 8 for _ in range(8)]
