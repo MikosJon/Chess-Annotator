@@ -195,7 +195,7 @@ class Game:
     def move_figure_to(self, figure, target, *, return_notation=False):
         if return_notation:
             info = self.get_info(figure, target)
-            notation = game.to_figurine_notation(figure, target, info)
+            notation = Game.to_figurine_notation(figure, target, info)
 
         captured_figure = self.get_figure_by_pos(target)
         if captured_figure:
@@ -319,7 +319,8 @@ class Game:
         self.move_figure_to(figure, starting_position)
         return moves
 
-    def deconstruct_notation(self, notation, color=None):
+    @staticmethod
+    def deconstruct_notation(notation, color=None):
         notation.remove('+')
         notation.remove('#')
         target = square_to_pos(notation[-2:])
@@ -348,7 +349,7 @@ class Game:
             return piece, color, target, info
 
     def make_move_from_notation(self, notation, color=None):
-        piece, color, target, info = self.deconstruct_notation(notation, color)
+        piece, color, target, info = Game.deconstruct_notation(notation, color)
 
         figures = self.get_figures_by_name(piece, color)
         possible_figures = []
