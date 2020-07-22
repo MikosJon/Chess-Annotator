@@ -291,12 +291,14 @@ class Game:
 
     def all_legal_moves(self, color):
         moves = []
-        for row in range(1, 9):
-            for col in range(1, 9):
-                for fig in self.in_play:
-                    if fig.color == color and self.is_legal(fig, (row, col)):
-                        info = self.get_info(fig, (row, col))
-                        moves.append((fig, (row, col), info))
+        for figure in self.in_play:
+            if figure.color != color:
+                continue
+            for dx, dy in figure.possible_moves:
+                target = (figure.position[0] + dx, figure.position[1] + dy)
+                if self.is_legal(figure, target):
+                    info = self.get_info(figure, target)
+                    moves.append((figure, target, info))
         return moves
 
     def all_legal_moves_after(self, figure, target, *, color=None):
@@ -421,7 +423,7 @@ for asdf in range(50):
 
     notation = game.move_figure_to(figure, target, return_notation=True)
     print(notation)
-    print(' '.join(sorted([game.to_figurine_notation(*move) for move in all_legal_moves])))
+    print('Vse možne poteze:', ' '.join(sorted([game.to_figurine_notation(*move) for move in all_legal_moves])))
     game.print_state()
     print()
 
