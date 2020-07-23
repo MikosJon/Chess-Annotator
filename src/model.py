@@ -443,7 +443,7 @@ class Game:
             if info.captures:
                 out += 'x'
 
-        out += 'abcdefgh'[target[1] - 1] + str(target[0])
+        out += pos_to_square(target)
         if info.check and not info.mate:
             out += '+'
         if info.mate:
@@ -474,5 +474,3 @@ for asdf in range(50):
     print()
 
     color = other_color(color)
-
-print('over')
