@@ -7,8 +7,8 @@ class MoveInfo:
     captures = False
     check = False
     mate = False
-    file = False
     unique = True
+    file = False
     rank = False
     promotion = None
 
@@ -36,7 +36,6 @@ def pos_to_square(position):
 def square_to_pos(square):
     return (int(square[-1]), 'abcdefgh'.index(square[-2]) + 1)
 
-
 KING_MOVES       = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 ROOK_MOVES       = [(0, x) for x in range(-7, 8) if x != 0] + [(x, 0) for x in range(-7, 8) if x != 0]
 BISHOP_MOVES     = [(x, x) for x in range(-7, 8) if x != 0] + [(x, -x) for x in range(-7, 8) if x != 0]
@@ -51,6 +50,7 @@ PROMOTION_MOVES = {
     Name.Bishop: BISHOP_MOVES,
     Name.Knight: KNIGHT_MOVES
 }
+PROMOTION_PIECES = {Name.Queen, Name.Rook, Name.Bishop, Name.Knight}
 
 FROM_FIGURINE = {
     '\u2654': (Name.King, Color.White),
@@ -96,8 +96,10 @@ TO_ALGEBRAIC = {
     Name.Queen:  'Q',
     Name.Rook:   'R',
     Name.Bishop: 'B',
-    Name.Knight: 'K'
+    Name.Knight: 'N'
 }
+ALGEBRAIC_NAMES = {'K', 'Q', 'R', 'B', 'N'}
+
 class Figure:
     def __init__(self, name, color, position, possible_moves):
         self.name = name
@@ -155,12 +157,18 @@ class Game:
 
     def add_figure(self, figure):
         self.in_play.add(figure)
-        self.update_positions()
+        if figure.color == Color.White:
+            self.pos_white.add(figure.position)
+        else:
+            self.pos_black.add(figure.position)
 
     def remove_from_play(self, figure):
         self.in_play.remove(figure)
-        self.update_positions()
         self.captured.add(figure)
+        if figure.color == Color.White:
+            self.pos_white.remove(figure.position)
+        else:
+            self.pos_black.remove(figure.position)
 
     def get_figures_by_name(self, name, color):
         out = []
@@ -174,28 +182,17 @@ class Game:
             if fig.position == pos:
                 return fig
 
-    def update_positions(self):
-        new_white = set()
-        new_black = set()
-        for figure in self.in_play:
-            if figure.color == Color.White:
-                new_white.add(figure.position)
-            else:
-                new_black.add(figure.position)
-        self.pos_white = new_white
-        self.pos_black = new_black
-
     def promote_pawn(self, pawn, piece):
         self.in_play.remove(pawn)
         self.promoted_pawns.add(pawn)
         self.add_figure(Figure(piece, pawn.color, pawn.position, PROMOTION_MOVES[piece]))
 
-    def undo_promotion(self, figure):
-        promoted_piece = self.get_figure_by_pos(figure.position)
+    def undo_promotion(self, pawn):
+        promoted_piece = self.get_figure_by_pos(pawn.position)
         self.in_play.remove(promoted_piece)
-        self.add_figure(figure)
+        self.add_figure(pawn)
 
-    def get_info(self, figure, target, promotion_piece=None):
+    def get_info(self, figure, target, *, promotion_piece=None):
         move_info = MoveInfo()
         move_info.promotion = promotion_piece
         move_info.check = self.is_king_in_check_after(figure, target, color=other_color(figure.color), promotion_piece=promotion_piece)
@@ -227,16 +224,21 @@ class Game:
         if captured_figure:
             self.remove_from_play(captured_figure)
 
+        if figure.color == Color.White:
+            self.pos_white.remove(figure.position)
+            self.pos_white.add(target)
+        else:
+            self.pos_black.remove(figure.position)
+            self.pos_black.add(target)
+
         figure.position = target
 
         if figure.name == Name.Pawn and target[0] in {1, 8}:
             if promotion_piece is not None:
                 self.promote_pawn(figure, promotion_piece)
-        self.update_positions()
 
         if return_notation:
             return notation
-        return None
 
     def is_legal(self, figure, target, *, promotion_piece=None):
         if self.is_move_possible(figure, target):
@@ -244,7 +246,12 @@ class Game:
                 return True
         return False
 
-    def is_move_possible(self, figure, target):
+    def is_move_possible(self, figure, target, *, check_flag=True):
+        if check_flag:
+            opponent_king = self.get_figures_by_name(Name.King, other_color(figure.color))[0]
+            if target == opponent_king.position:
+                return False
+
         move = (target[0] - figure.position[0], target[1] - figure.position[1])
         number_of_moved_squares = max(abs(move[0]), abs(move[1]))
         curr_position = figure.position
@@ -277,7 +284,7 @@ class Game:
                     return False
                 if figure.color == Color.Black and curr_position[0] != 7:
                     return False
-            if move[0] != 0 and move[1] != 0:
+            if move[1] != 0:
                 if figure.color == Color.White and target not in self.pos_black:
                     return False
                 if figure.color == Color.Black and target not in self.pos_white:
@@ -298,7 +305,7 @@ class Game:
         for fig in self.in_play:
             if fig.color == color:
                 continue
-            if self.is_move_possible(fig, king.position):
+            if self.is_move_possible(fig, king.position, check_flag=False):
                 return True
         return False
 
@@ -306,7 +313,6 @@ class Game:
         if color is None:
             color = figure.color
 
-        king = self.get_figures_by_name(Name.King, color)[0]
         removed_piece = self.get_figure_by_pos(target)
 
         if removed_piece:
@@ -316,12 +322,12 @@ class Game:
 
         answer = self.is_king_in_check_now(color)
 
+        if promotion_piece is not None:
+            self.undo_promotion(figure)
+
         if removed_piece:
             self.add_figure(removed_piece)
             self.captured.remove(removed_piece)
-
-        if promotion_piece is not None:
-            self.undo_promotion(figure)
 
         self.move_figure_to(figure, starting_position)
         return answer
@@ -333,12 +339,14 @@ class Game:
                 continue
             for dx, dy in figure.possible_moves:
                 target = (figure.position[0] + dx, figure.position[1] + dy)
+                if not self.is_legal(figure, target):
+                    continue
+
                 if figure.name == Name.Pawn and target[0] in {1,8}:
-                    for piece in PROMOTION_MOVES:
-                        if self.is_legal(figure, target, promotion_piece=piece):
-                            move_info = self.get_info(figure, target, promotion_piece=piece)
-                            moves.append((figure, target, move_info))
-                elif self.is_legal(figure, target):
+                    for piece in PROMOTION_PIECES:
+                        move_info = self.get_info(figure, target, promotion_piece=piece)
+                        moves.append((figure, target, move_info))
+                else:
                     move_info = self.get_info(figure, target)
                     moves.append((figure, target, move_info))
         return moves
@@ -355,12 +363,12 @@ class Game:
 
         moves = self.all_legal_moves(color)
 
+        if promotion_piece is not None:
+            self.undo_promotion(figure)
+
         if removed_piece:
             self.add_figure(removed_piece)
             self.captured.remove(removed_piece)
-
-        if promotion_piece is not None:
-            self.undo_promotion(figure)
 
         self.move_figure_to(figure, starting_position)
         return moves
@@ -387,7 +395,7 @@ class Game:
             else:
                 promotion_piece = None
 
-            if notation[0] not in 'KQRBN':
+            if notation[0] not in ALGEBRAIC_NAMES:
                 piece = Name.Pawn
                 info = notation[:-2]
 
@@ -411,7 +419,7 @@ class Game:
         return piece, color, target, info, promotion_piece
 
     def make_move_from_notation(self, notation, color=None):
-        piece, color, target, info, promotion_piece = Game.deconstruct_notation(notation, color)
+        piece, color, target, position_info, promotion_piece = Game.deconstruct_notation(notation, color)
 
         figures = self.get_figures_by_name(piece, color)
         possible_figures = []
@@ -420,23 +428,23 @@ class Game:
             figure = figures[0]
 
             if not self.is_legal(figure, target, promotion_piece=promotion_piece):
-                return None
+                raise ValueError('Illegal move')
 
             self.move_figure_to(figure, target, promotion_piece=promotion_piece)
         else:
             for figure in figures:
                 if not self.is_legal(figure, target, promotion_piece=promotion_piece):
                     continue
-                if len(info) != 0:
-                    if info[0] in 'abcdefgh' and figure.file != info[0]:
+                if len(position_info) != 0:
+                    if position_info[0] in 'abcdefgh' and figure.file != position_info[0]:
                         continue
-                    if info[-1] in range(1, 9) and figure.rank != info[-1]:
+                    if position_info[-1] in range(1, 9) and figure.rank != position_info[-1]:
                         continue
                 possible_figures.append(figure)
             if len(possible_figures) == 0:
-                print('Illegal move')
+                raise ValueError('Illegal move')
             elif len(possible_figures) >= 2:
-                print('Not enough info')
+                raise ValueError('Not enough info')
             else:
                 self.move_figure_to(possible_figures[0], target, promotion_piece=promotion_piece)
 
@@ -487,14 +495,22 @@ class Game:
 game = Game()
 
 color = Color.White
-for asdf in range(50):
+for asdf in range(100):
     all_legal_moves = game.all_legal_moves(color)
-    figure, target, move_info = choice(all_legal_moves)
+    legal_move_notations = ' '.join(sorted([game.to_figurine_notation(*move) for move in all_legal_moves]))
 
+    figure, target, move_info = choice(all_legal_moves)
     notation = game.move_figure_to(figure, target, return_notation=True, promotion_piece=move_info.promotion)
+
     print(notation)
-    print('Vse možne poteze:', ' '.join(sorted([game.to_figurine_notation(*move) for move in all_legal_moves])))
+    print('Vse možne poteze:', legal_move_notations)
     game.print_state()
     print()
+
+    if '#' in notation:
+        print('Game over!', color.name, 'wins!')
+        break
+    if len(legal_move_notations) == 0:
+        print('Stalemate!')
 
     color = other_color(color)
