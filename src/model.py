@@ -271,7 +271,6 @@ class Game:
 
         figure.position = target
 
-
         if figure.name == Name.Pawn and target[0] in {1, 8}:
             if promo_piece is not None:
                 self.promote_pawn(figure, promo_piece)
@@ -440,23 +439,11 @@ class Game:
             if target[1] == 7:
                 rook = self.get_figure_by_pos((row, 8))
                 rook_starting = rook.position
-                rook.position = (row, 6)
-                if figure.color == Color.White:
-                    self.pos_white.remove(rook_starting)
-                    self.pos_white.add((row, 6))
-                else:
-                    self.pos_black.remove(rook_starting)
-                    self.pos_black.add((row, 6))
+                self.move_figure_to(rook, (row, 6))
             elif target[1] == 3:
                 rook = self.get_figure_by_pos((row, 1))
                 rook_starting = rook.position
-                rook.position = (row, 4)
-                if figure.color == Color.White:
-                    self.pos_white.remove(rook_starting)
-                    self.pos_white.add((row, 4))
-                else:
-                    self.pos_black.remove(rook_starting)
-                    self.pos_black.add((row, 4))
+                self.move_figure_to(rook, (row, 4))
             castling = True
 
         answer = self.is_king_in_check_now(color)
@@ -471,13 +458,7 @@ class Game:
         self.move_figure_to(figure, starting_position)
 
         if castling:
-            if figure.color == Color.White:
-                self.pos_white.remove(rook.position)
-                self.pos_white.add(rook_starting)
-            else:
-                self.pos_black.remove(rook.position)
-                self.pos_black.add(rook_starting)
-            rook.position = rook_starting
+            self.move_figure_to(rook, rook_starting)
         return answer
 
     def all_legal_moves(self, color):
@@ -524,11 +505,11 @@ class Game:
             if target[1] == 7:
                 rook = self.get_figure_by_pos((row, 8))
                 rook_starting = rook.position
-                rook.position = (row, 6)
+                self.move_figure_to(rook, (row, 6))
             elif target[1] == 3:
                 rook = self.get_figure_by_pos((row, 1))
                 rook_starting = rook.position
-                rook.position = (row, 4)
+                self.move_figure_to(rook, (row, 4))
             castling = True
 
         moves = self.all_legal_moves(color)
@@ -543,7 +524,7 @@ class Game:
         self.move_figure_to(figure, starting_position)
 
         if castling:
-            rook.position = rook_starting
+            self.move_figure_to(rook, rook_starting)
         return moves
 
     @staticmethod
@@ -665,10 +646,10 @@ class Game:
                     row = 8
                 if target[1] == 7:
                     rook = self.get_figure_by_pos((row, 8))
-                    rook.position = (row, 6)
+                    self.move_figure_to(rook, (row, 6))
                 elif target[1] == 3:
                     rook = self.get_figure_by_pos((row, 1))
-                    rook.position = (row, 4)
+                    self.move_figure_to(rook, (row, 4))
 
             if figure.name == Name.King:
                 if figure.color == Color.White:
@@ -695,11 +676,6 @@ class Game:
             for figure in figures:
                 if not self.is_legal(figure, target, promo_piece=promo_piece):
                     continue
-                # if len(position_info) != 0:
-                #     if position_info[0] in 'abcdefgh' and figure.file != position_info[0]:
-                #         continue
-                #     if position_info[-1] in range(1, 9) and figure.rank != int(position_info[-1]):
-                #         continue
                 if rank and figure.rank != rank:
                     continue
                 if file and figure.file != file:
@@ -779,8 +755,11 @@ for asdf in range(200):
     all_legal_moves = game.all_legal_moves(color)
     legal_move_notations = ' '.join(sorted([Game.to_figurine_notation(*move) for move in all_legal_moves]))
 
+    if len(legal_move_notations) == 0:
+        print('Pat!')
+        break
+
     notation = Game.to_figurine_notation(*choice(all_legal_moves))
-    # notation = game.move_figure_to(figure, target, return_notation=True, promo_piece=move_info.promotion)
     game.make_move_from_notation(notation, color)
 
     print(notation)
@@ -789,25 +768,8 @@ for asdf in range(200):
     print()
 
     if '#' in notation:
-        print('Game over!', color.name, 'wins!')
+        barva = 'Beli' if color == Color.White else 'Črni'
+        print('Konec igre!', barva, 'zmaga!')
         break
-    if len(legal_move_notations) == 0:
-        print('Stalemate!')
 
     color = other_color(color)
-
-# color = Color.White
-# game.make_move_from_notation('d4',color)
-# game.make_move_from_notation('Qd3',color)
-# game.make_move_from_notation('Bd2',color)
-# game.make_move_from_notation('Nc3',color)
-# print(' '.join(sorted([game.to_figurine_notation(*move) for move in game.all_legal_moves(color)])))
-# game.print_state()
-# king = game.get_figure_by_pos((1,5))
-# game.is_legal(king, (1,3))
-# game.make_move_from_notation('O-O-O', Color.White)
-# game.print_state()
-
-# # king = game.get_figure_by_pos((1,5))
-# # print(game.is_legal(king, (1,3)))
-# # print(game.is_legal(king, (1,7)))
