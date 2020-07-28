@@ -18,7 +18,8 @@ class Move:
     color = None
     start = None
     target = None
-    position_info = None
+    rank = None
+    file = None
     promo_piece = None
     en_passant = False
     castling = False
@@ -440,10 +441,22 @@ class Game:
                 rook = self.get_figure_by_pos((row, 8))
                 rook_starting = rook.position
                 rook.position = (row, 6)
+                if figure.color == Color.White:
+                    self.pos_white.remove(rook_starting)
+                    self.pos_white.add((row, 6))
+                else:
+                    self.pos_black.remove(rook_starting)
+                    self.pos_black.add((row, 6))
             elif target[1] == 3:
                 rook = self.get_figure_by_pos((row, 1))
                 rook_starting = rook.position
                 rook.position = (row, 4)
+                if figure.color == Color.White:
+                    self.pos_white.remove(rook_starting)
+                    self.pos_white.add((row, 4))
+                else:
+                    self.pos_black.remove(rook_starting)
+                    self.pos_black.add((row, 4))
             castling = True
 
         answer = self.is_king_in_check_now(color)
@@ -458,6 +471,12 @@ class Game:
         self.move_figure_to(figure, starting_position)
 
         if castling:
+            if figure.color == Color.White:
+                self.pos_white.remove(rook.position)
+                self.pos_white.add(rook_starting)
+            else:
+                self.pos_black.remove(rook.position)
+                self.pos_black.add(rook_starting)
             rook.position = rook_starting
         return answer
 
@@ -558,7 +577,7 @@ class Game:
 
         move.target = square_to_pos(notation[-2:])
 
-        if notation[0].isascii():
+        if notation[0] in ALGEBRAIC_NAMES:
             if color is None:
                 raise ValueError('Missing color!')
             move.color = color
@@ -570,26 +589,50 @@ class Game:
 
             if notation[0] not in ALGEBRAIC_NAMES:
                 move.piece = Name.Pawn
-                move.position_info = notation[:-2]
-
+                position_info = notation[:-2]
             else:
                 move.piece = FROM_ALGEBRAIC[notation[0]]
-                move.position_info = notation[1:-2]
+                position_info = notation[1:-2]
+
+            position_info = position_info.replace('x', '')
+
+            if len(position_info) == 1:
+                if position_info in 'abcdefgh':
+                    move.file = position_info
+                else:
+                    move.rank = int(position_info)
+            elif len(position_info) == 2:
+                move.file = position_info[0]
+                move.rank = int(position_info[1])
 
         else:
-            piece, color = FROM_FIGURINE[notation[0]]
+            if notation[0].isascii():
+                piece = Name.Pawn
+            else:
+                piece, color = FROM_FIGURINE[notation[0]]
             move.piece = piece
             move.color = color
 
             if promo_notation:
-                move.promo_piece = FROM_FIGURINE[promo_notation]
+                move.promo_piece = FROM_FIGURINE[promo_notation][0]
             else:
                 move.promo_piece = None
 
             if move.piece == Name.Pawn:
-                move.position_info = notation[:-2]
+                position_info = notation[:-2]
             else:
-                move.position_info = notation[1:-2]
+                position_info = notation[1:-2]
+
+            position_info = position_info.replace('x', '')
+
+            if len(position_info) == 1:
+                if position_info in 'abcdefgh':
+                    move.file = position_info
+                else:
+                    move.rank = int(position_info)
+            elif len(position_info) == 2:
+                move.file = position_info[0]
+                move.rank = int(position_info[1])
 
         return move
 
@@ -598,7 +641,8 @@ class Game:
         piece = move.piece
         color = move.color
         target = move.target
-        position_info = move.position_info
+        rank = move.rank
+        file = move.file
         promo_piece = move.promo_piece
         castling = move.castling
 
@@ -651,11 +695,15 @@ class Game:
             for figure in figures:
                 if not self.is_legal(figure, target, promo_piece=promo_piece):
                     continue
-                if len(position_info) != 0:
-                    if position_info[0] in 'abcdefgh' and figure.file != position_info[0]:
-                        continue
-                    if position_info[-1] in range(1, 9) and figure.rank != position_info[-1]:
-                        continue
+                # if len(position_info) != 0:
+                #     if position_info[0] in 'abcdefgh' and figure.file != position_info[0]:
+                #         continue
+                #     if position_info[-1] in range(1, 9) and figure.rank != int(position_info[-1]):
+                #         continue
+                if rank and figure.rank != rank:
+                    continue
+                if file and figure.file != file:
+                    continue
                 possible_figures.append(figure)
             if len(possible_figures) == 0:
                 raise ValueError('Illegal move')
