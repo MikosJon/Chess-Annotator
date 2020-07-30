@@ -141,8 +141,6 @@ class Game:
     def __init__(self):
         self.in_play = set()
         self.captured = set()
-        self.pos_white = set()
-        self.pos_black = set()
         self.promoted_pawns = set()
 
         self.last_move = Move()
@@ -155,48 +153,36 @@ class Game:
         self.white_long_rook = Figure(Name.Rook, Color.White, (1, 1), ROOK_MOVES)
         self.white_short_rook = Figure(Name.Rook, Color.White, (1, 8), ROOK_MOVES)
 
-        self.add_figure(self.white_long_rook)
-        self.add_figure(self.white_short_rook)
+        self.in_play.add(self.white_long_rook)
+        self.in_play.add(self.white_short_rook)
 
         self.black_long_rook = Figure(Name.Rook, Color.Black, (8, 1), ROOK_MOVES)
         self.black_short_rook = Figure(Name.Rook, Color.Black, (8, 8), ROOK_MOVES)
 
-        self.add_figure(self.black_long_rook)
-        self.add_figure(self.black_short_rook)
+        self.in_play.add(self.black_long_rook)
+        self.in_play.add(self.black_short_rook)
 
-        self.add_figure(Figure(Name.King  , Color.White, (1, 5), KING_MOVES))
-        self.add_figure(Figure(Name.Queen , Color.White, (1, 4), QUEEN_MOVES))
-        self.add_figure(Figure(Name.Bishop, Color.White, (1, 3), BISHOP_MOVES))
-        self.add_figure(Figure(Name.Bishop, Color.White, (1, 6), BISHOP_MOVES))
-        self.add_figure(Figure(Name.Knight, Color.White, (1, 2), KNIGHT_MOVES))
-        self.add_figure(Figure(Name.Knight, Color.White, (1, 7), KNIGHT_MOVES))
+        self.in_play.add(Figure(Name.King  , Color.White, (1, 5), KING_MOVES))
+        self.in_play.add(Figure(Name.Queen , Color.White, (1, 4), QUEEN_MOVES))
+        self.in_play.add(Figure(Name.Bishop, Color.White, (1, 3), BISHOP_MOVES))
+        self.in_play.add(Figure(Name.Bishop, Color.White, (1, 6), BISHOP_MOVES))
+        self.in_play.add(Figure(Name.Knight, Color.White, (1, 2), KNIGHT_MOVES))
+        self.in_play.add(Figure(Name.Knight, Color.White, (1, 7), KNIGHT_MOVES))
         for i in range(1, 9):
-            self.add_figure(Figure(Name.Pawn, Color.White, (2, i), WHITE_PAWN_MOVES))
+            self.in_play.add(Figure(Name.Pawn, Color.White, (2, i), WHITE_PAWN_MOVES))
 
-        self.add_figure(Figure(Name.King  , Color.Black, (8, 5), KING_MOVES))
-        self.add_figure(Figure(Name.Queen , Color.Black, (8, 4), QUEEN_MOVES))
-        self.add_figure(Figure(Name.Bishop, Color.Black, (8, 3), BISHOP_MOVES))
-        self.add_figure(Figure(Name.Bishop, Color.Black, (8, 6), BISHOP_MOVES))
-        self.add_figure(Figure(Name.Knight, Color.Black, (8, 2), KNIGHT_MOVES))
-        self.add_figure(Figure(Name.Knight, Color.Black, (8, 7), KNIGHT_MOVES))
+        self.in_play.add(Figure(Name.King  , Color.Black, (8, 5), KING_MOVES))
+        self.in_play.add(Figure(Name.Queen , Color.Black, (8, 4), QUEEN_MOVES))
+        self.in_play.add(Figure(Name.Bishop, Color.Black, (8, 3), BISHOP_MOVES))
+        self.in_play.add(Figure(Name.Bishop, Color.Black, (8, 6), BISHOP_MOVES))
+        self.in_play.add(Figure(Name.Knight, Color.Black, (8, 2), KNIGHT_MOVES))
+        self.in_play.add(Figure(Name.Knight, Color.Black, (8, 7), KNIGHT_MOVES))
         for i in range(1, 9):
-            self.add_figure(Figure(Name.Pawn, Color.Black, (7, i), BLACK_PAWN_MOVES))
-
-
-    def add_figure(self, figure):
-        self.in_play.add(figure)
-        if figure.color == Color.White:
-            self.pos_white.add(figure.position)
-        else:
-            self.pos_black.add(figure.position)
+            self.in_play.add(Figure(Name.Pawn, Color.Black, (7, i), BLACK_PAWN_MOVES))
 
     def remove_from_play(self, figure):
         self.in_play.remove(figure)
         self.captured.add(figure)
-        if figure.color == Color.White:
-            self.pos_white.remove(figure.position)
-        else:
-            self.pos_black.remove(figure.position)
 
     def get_figures_by_name(self, name, color):
         out = []
@@ -213,12 +199,12 @@ class Game:
     def promote_pawn(self, pawn, piece):
         self.in_play.remove(pawn)
         self.promoted_pawns.add(pawn)
-        self.add_figure(Figure(piece, pawn.color, pawn.position, PROMOTION_MOVES[piece]))
+        self.in_play.add(Figure(piece, pawn.color, pawn.position, PROMOTION_MOVES[piece]))
 
     def undo_promotion(self, pawn):
         promoted_piece = self.get_figure_by_pos(pawn.position)
         self.in_play.remove(promoted_piece)
-        self.add_figure(pawn)
+        self.in_play.add(pawn)
 
     def get_info(self, figure, target, *, promo_piece=None):
         move_info = MoveInfo()
@@ -247,36 +233,19 @@ class Game:
             move_info.captures = True
         return move_info
 
-    def move_figure_to(self, figure, target, *, return_notation=False, promo_piece=None):
-        if return_notation:
-            move_info = self.get_info(figure, target, promo_piece=promo_piece)
-            notation = Game.to_figurine_notation(figure, target, move_info)
-
+    def move_figure_to(self, figure, target, *, promo_piece=None):
         if self.is_en_passant(figure, target):
-            row = self.last_move.start[0]
-            col = target[1]
-            captured_figure = self.get_figure_by_pos((row, col))
+            captured_figure = self.get_figure_by_pos(self.last_move.target)
         else:
             captured_figure = self.get_figure_by_pos(target)
 
         if captured_figure:
             self.remove_from_play(captured_figure)
-
-        if figure.color == Color.White:
-            self.pos_white.remove(figure.position)
-            self.pos_white.add(target)
-        else:
-            self.pos_black.remove(figure.position)
-            self.pos_black.add(target)
-
         figure.position = target
 
         if figure.name == Name.Pawn and target[0] in {1, 8}:
             if promo_piece is not None:
                 self.promote_pawn(figure, promo_piece)
-
-        if return_notation:
-            return notation
 
     def is_legal(self, figure, target, *, promo_piece=None):
         if self.is_move_possible(figure, target):
@@ -311,9 +280,12 @@ class Game:
         else:
             dy = move[1] // abs(move[1])
 
-        if figure.color == Color.White and target in self.pos_white:
+        pos_white = set(figure.position for figure in self.in_play if figure.color == Color.White)
+        pos_black = set(figure.position for figure in self.in_play if figure.color == Color.Black)
+
+        if figure.color == Color.White and target in pos_white:
             return False
-        if figure.color == Color.Black and target in self.pos_black:
+        if figure.color == Color.Black and target in pos_black:
             return False
 
         if figure.name == Name.Knight:
@@ -326,17 +298,17 @@ class Game:
                 if figure.color == Color.Black and curr_position[0] != 7:
                     return False
             if move[1] != 0 and not self.is_en_passant(figure, target):
-                if figure.color == Color.White and target not in self.pos_black:
+                if figure.color == Color.White and target not in pos_black:
                     return False
-                if figure.color == Color.Black and target not in self.pos_white:
+                if figure.color == Color.Black and target not in pos_white:
                     return False
             else:
-                if target in self.pos_black or target in self.pos_white:
+                if target in pos_black or target in pos_white:
                     return False
 
         for i in range(1, number_of_moved_squares):
             test_position = (curr_position[0] + i * dx, curr_position[1] + i * dy)
-            if test_position in self.pos_white or test_position in self.pos_black:
+            if test_position in pos_white or test_position in pos_black:
                 return False
 
         return True
@@ -392,22 +364,28 @@ class Game:
                     return False
         return True
 
-    def is_en_passant(self, pawn, target):
-        if self.last_move.color != other_color(pawn.color):
+    def is_en_passant(self, figure, target):
+        if figure.name != Name.Pawn:
+            return False
+        if self.last_move.color != other_color(figure.color):
             return False
         if self.last_move.piece != Name.Pawn:
             return False
-        if self.last_move.start[0] not in {2, 7} or self.last_move.target[0] not in {4, 5}:
-            return False
-        if pawn.position[0] != self.last_move.target[0]:
+        if figure.position[0] != self.last_move.target[0]:
             return False
         if target[1] != self.last_move.target[1]:
             return False
+        if self.last_move.start[0] == 2 and self.last_move.target[0] == 4:
+            if target[0] != 3:
+                return False
+        if self.last_move.start[0] == 7 and self.last_move.target[0] == 5:
+            if target[0] != 6:
+                return False
         return True
 
     def is_king_in_check_now(self, color):
         king = self.get_figures_by_name(Name.King, color)[0]
-        for fig in self.in_play:
+        for fig in list(self.in_play):
             if fig.color == color:
                 continue
             if self.is_move_possible(fig, king.position, check_flag=False):
@@ -419,9 +397,7 @@ class Game:
             color = figure.color
 
         if self.is_en_passant(figure, target):
-            row = self.last_move.start[0]
-            col = target[1]
-            removed_piece = self.get_figure_by_pos((row, col))
+            removed_piece = self.get_figure_by_pos(self.last_move.target)
         else:
             removed_piece = self.get_figure_by_pos(target)
 
@@ -452,10 +428,10 @@ class Game:
             self.undo_promotion(figure)
 
         if removed_piece:
-            self.add_figure(removed_piece)
+            self.in_play.add(removed_piece)
             self.captured.remove(removed_piece)
 
-        self.move_figure_to(figure, starting_position)
+        figure.position = starting_position
 
         if castling:
             self.move_figure_to(rook, rook_starting)
@@ -463,13 +439,14 @@ class Game:
 
     def all_legal_moves(self, color):
         moves = []
-        for figure in self.in_play:
+        for figure in list(self.in_play):
             if figure.color != color:
                 continue
             for dx, dy in figure.possible_moves:
                 target = (figure.position[0] + dx, figure.position[1] + dy)
                 if not self.is_legal(figure, target):
                     continue
+
 
                 if figure.name == Name.Pawn and target[0] in {1,8}:
                     for piece in PROMOTION_PIECES:
@@ -485,9 +462,7 @@ class Game:
             color = other_color(figure.color)
 
         if self.is_en_passant(figure, target):
-            row = self.last_move.start[0]
-            col = target[1]
-            removed_piece = self.get_figure_by_pos((row, col))
+            removed_piece = self.get_figure_by_pos(self.last_move.target)
         else:
             removed_piece = self.get_figure_by_pos(target)
 
@@ -518,10 +493,10 @@ class Game:
             self.undo_promotion(figure)
 
         if removed_piece:
-            self.add_figure(removed_piece)
+            self.in_play.add(removed_piece)
             self.captured.remove(removed_piece)
 
-        self.move_figure_to(figure, starting_position)
+        figure.position = starting_position
 
         if castling:
             self.move_figure_to(rook, rook_starting)
