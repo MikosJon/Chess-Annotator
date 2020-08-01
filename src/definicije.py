@@ -2,7 +2,7 @@ from enum import Enum, auto
 from dataclasses import dataclass
 
 @dataclass
-class MoveInfo:
+class NotationInfo:
     captures = False
     check = False
     mate = False
@@ -17,8 +17,6 @@ class Move:
     color = None
     start = None
     target = None
-    rank = None
-    file = None
     promo_piece = None
     en_passant = False
     castling = False
@@ -111,10 +109,10 @@ def pos_to_square(position):
 def square_to_pos(square):
     return (int(square[-1]), 'abcdefgh'.index(square[-2]) + 1)
 
-def to_figurine_notation(figure, target, move_info):
+def to_figurine_notation(figure, target, notation_info):
     out = ''
     if figure.name == Name.Pawn:
-        if move_info.captures:
+        if notation_info.captures:
             out += figure.file
             out += 'x'
     elif figure.name == Name.King and abs(figure.position[1] - target[1]) == 2:
@@ -123,125 +121,36 @@ def to_figurine_notation(figure, target, move_info):
         else:
             out += 'O-O-O'
 
-        if move_info.check and not move_info.mate:
+        if notation_info.check and not notation_info.mate:
             out += '+'
-        if move_info.mate:
+        if notation_info.mate:
             out += '#'
 
         return out
     else:
         out += figure.as_piece()
-        if not move_info.unique:
-            if not move_info.file:
+        if not notation_info.unique:
+            if not notation_info.file:
                 out += figure.file
-            elif not move_info.rank:
+            elif not notation_info.rank:
                 out += str(figure.rank)
             else:
                 out += figure.file + str(figure.rank)
-        if move_info.captures:
+        if notation_info.captures:
             out += 'x'
 
     out += pos_to_square(target)
 
-    if move_info.promotion is not None:
+    if notation_info.promotion is not None:
         out += '='
         if figure.color == Color.White:
-            out += TO_WHITE_PIECE[move_info.promotion]
+            out += TO_WHITE_PIECE[notation_info.promotion]
         else:
-            out += TO_BLACK_PIECE[move_info.promotion]
+            out += TO_BLACK_PIECE[notation_info.promotion]
 
-    if move_info.check and not move_info.mate:
+    if notation_info.check and not notation_info.mate:
         out += '+'
-    if move_info.mate:
+    if notation_info.mate:
         out += '#'
 
     return out
-
-def deconstruct_notation(notation, color=None):
-    move = Move()
-    notation = notation.replace('+', '')
-    notation = notation.replace('#', '')
-
-    if 'O' in notation:
-        move.castling = True
-        move.piece = Name.King
-        move.color = color
-        if notation.count('O') == 2:
-            if color == Color.White:
-                move.target = (1, 7)
-            else:
-                move.target = (8, 7)
-        else:
-            if color == Color.White:
-                move.target = (1, 3)
-            else:
-                move.target = (8, 3)
-
-        return move
-
-    if '=' in notation:
-        promo_notation = notation[-1]
-        notation = notation[:-2]
-    else:
-        promo_notation = None
-
-    move.target = square_to_pos(notation[-2:])
-
-    if notation[0] in ALGEBRAIC_NAMES:
-        if color is None:
-            raise ValueError('Missing color!')
-        move.color = color
-
-        if promo_notation:
-            move.promo_piece = FROM_ALGEBRAIC[promo_notation]
-        else:
-            move.promo_piece = None
-
-        if notation[0] not in ALGEBRAIC_NAMES:
-            move.piece = Name.Pawn
-            position_info = notation[:-2]
-        else:
-            move.piece = FROM_ALGEBRAIC[notation[0]]
-            position_info = notation[1:-2]
-
-        position_info = position_info.replace('x', '')
-
-        if len(position_info) == 1:
-            if position_info in 'abcdefgh':
-                move.file = position_info
-            else:
-                move.rank = int(position_info)
-        elif len(position_info) == 2:
-            move.file = position_info[0]
-            move.rank = int(position_info[1])
-
-    else:
-        if notation[0].isascii():
-            piece = Name.Pawn
-        else:
-            piece, color = FROM_FIGURINE[notation[0]]
-        move.piece = piece
-        move.color = color
-
-        if promo_notation:
-            move.promo_piece = FROM_FIGURINE[promo_notation][0]
-        else:
-            move.promo_piece = None
-
-        if move.piece == Name.Pawn:
-            position_info = notation[:-2]
-        else:
-            position_info = notation[1:-2]
-
-        position_info = position_info.replace('x', '')
-
-        if len(position_info) == 1:
-            if position_info in 'abcdefgh':
-                move.file = position_info
-            else:
-                move.rank = int(position_info)
-        elif len(position_info) == 2:
-            move.file = position_info[0]
-            move.rank = int(position_info[1])
-
-    return move
