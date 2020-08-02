@@ -36,7 +36,7 @@ class CLI:
                 print('Nepricakovana napaka!')
                 raise
             else:
-                if self.game.is_mate(other_color(self.current_color)):
+                if self.game.is_mate():
                     result = '1 - 0' if self.current_color == Color.White else '0 - 1'
                     print(f'{color} zmaga!', result)
                     break
@@ -62,7 +62,7 @@ class CLI:
                 notations.append(to_figurine_notation(figure, target, notation_info))
             legal_move_notations = ' '.join(sorted(notations))
 
-            if len(all_legal_moves) == 0:
+            if self.game.is_stalemate(self.current_color):
                 print('Pat')
                 break
 
@@ -82,7 +82,7 @@ class CLI:
             print(self.game.printable_state())
             print()
 
-            if '#' in notation:
+            if self.game.is_mate():
                 barva = 'Beli' if self.current_color == Color.White else 'Črni'
                 print('Konec igre!', barva, 'zmaga!')
                 break
@@ -91,4 +91,6 @@ class CLI:
 
 
 vmesnik = CLI()
-vmesnik.one_game(200)
+# vmesnik.run_to_crash()
+# vmesnik.one_game(200)
+vmesnik.run()

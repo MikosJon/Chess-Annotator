@@ -110,9 +110,15 @@ class Game:
         self.in_play.add(pawn)
 
     def is_stalemate(self, color):
-        return len(self.all_legal_moves(color)) == 0 and not self.is_king_in_check_now(color)
+        if self.is_king_in_check_now(color):
+            return False
+        for figure in self.in_play:
+            if figure.color == color:
+                if len(self.figure_legal_moves(figure)) != 0:
+                    return False
+        return True
 
-    def is_mate(self, color):
+    def is_mate(self):
         return self.moves[-1][1].mate
 
     def get_info(self, figure, target, *, promo_piece=None):
@@ -185,11 +191,12 @@ class Game:
 
         if target[0] not in range(1, 9) or target[1] not in range(1, 9):
             return False
-        if move not in figure.possible_moves:
-            return False
 
         if figure.name == Name.King and number_of_moved_squares == 2:
             return self.is_castling_legal(figure, target)
+
+        if move not in figure.possible_moves:
+            return False
 
         if move[0] == 0:
             dx = 0
@@ -243,9 +250,7 @@ class Game:
         if king.name != Name.King:
             return False
         if king.color == Color.White:
-            if not self.white_long_castle and not self.white_short_castle:
-                return False
-            if target[1] == 7:
+            if target[1] == 7 and self.white_short_castle:
                 figure = self.get_figure_by_pos((1, 8))
                 if figure is None or figure.name != Name.Rook or figure.color == Color.Black:
                     return False
@@ -263,7 +268,7 @@ class Game:
                     return False
                 king.position = (1, 5)
 
-            elif target[1] == 3:
+            elif target[1] == 3 and self.white_long_castle:
                 figure = self.get_figure_by_pos((1, 1))
                 if figure is None or figure.name != Name.Rook or figure.color == Color.Black:
                     return False
@@ -284,9 +289,7 @@ class Game:
             else:
                 return False
         else:
-            if not self.black_long_castle and not self.black_short_castle:
-                return False
-            if target[1] == 7:
+            if target[1] == 7 and self.black_short_castle:
                 figure = self.get_figure_by_pos((8, 8))
                 if figure is None or figure.name != Name.Rook or figure.color == Color.White:
                     return False
@@ -303,7 +306,7 @@ class Game:
                     king.position = (8, 5)
                     return False
                 king.position = (8, 5)
-            elif target[1] == 3:
+            elif target[1] == 3 and self.black_long_castle:
                 figure = self.get_figure_by_pos((8, 1))
                 if figure is None or figure.name != Name.Rook or figure.color == Color.White:
                     return False
@@ -402,24 +405,109 @@ class Game:
             rook.position = rook_starting
         return answer
 
+    def figure_legal_moves(self, figure):
+        moves = []
+        pos_white = set()
+        pos_black = set()
+
+        for fig in self.in_play:
+            if fig.color == Color.White:
+                pos_white.add(fig.position)
+            else:
+                pos_black.add(fig.position)
+
+        if figure.name == Name.Pawn:
+            for dx, dy in figure.possible_moves:
+                target = (figure.position[0] + dx, figure.position[1] + dy)
+                if target[0] not in range(1, 9) or target[1] not in range(1, 9):
+                    continue
+                if dx in {-2, 2}:
+                    if figure.color == Color.White and figure.position[0] != 2:
+                        continue
+                    if figure.color == Color.Black and figure.position[0] != 7:
+                        continue
+                    blockade = (figure.position[0] + dx // 2, figure.position[1])
+                    if blockade in pos_black or blockade in pos_white:
+                        continue
+                    if target in pos_black or target in pos_white:
+                        continue
+                elif dy != 0 and not self.is_en_passant(figure, target):
+                    if figure.color == Color.White and target not in pos_black:
+                        continue
+                    if figure.color == Color.Black and target not in pos_white:
+                        continue
+                else:
+                    if target in pos_black or target in pos_white:
+                        continue
+                if not self.is_king_in_check_after(figure, target):
+                    move = self.get_move(figure, target)
+                    notation_info = self.get_info(figure, target)
+                    moves.append((move, notation_info))
+        elif figure.name == Name.King or figure.name == Name.Knight:
+            for dx, dy in figure.possible_moves:
+                target = (figure.position[0] + dx, figure.position[1] + dy)
+                if target[0] not in range(1, 9) or target[1] not in range(1, 9):
+                    continue
+                if figure.color == Color.White and target in pos_white:
+                    continue
+                if figure.color == Color.Black and target in pos_black:
+                    continue
+                if not self.is_king_in_check_after(figure, target):
+                    move = self.get_move(figure, target)
+                    notation_info = self.get_info(figure, target)
+                    moves.append((move, notation_info))
+            if figure.name == Name.King:
+                for dy in {-2, 2}:
+                    target = (figure.position[0], figure.position[1] + dy)
+                    if self.is_castling_legal(figure, target): # add a flag to not call is_castling_legal?
+                        move = self.get_move(figure, target)
+                        notation_info = self.get_info(figure, target)
+                        moves.append((move, notation_info))
+        else:
+            seen = [False] * 8
+            if figure.name == Name.Rook:
+                for i in {0, 2, 5, 7}:
+                    seen[i] = True
+            elif figure.name == Name.Bishop:
+                for i in {1, 3, 4, 6}:
+                    seen[i] = True
+
+            for r in range(1, 8):
+                if all(seen):
+                    break
+                for idx, (dx, dy) in enumerate(DIRECTIONS):
+                    if seen[idx]:
+                        continue
+                    target = (figure.position[0] + r * dx, figure.position[1] + r * dy)
+                    if target[0] not in range(1, 9) or target[1] not in range(1, 9):
+                        seen[idx] = True
+                        continue
+                    if figure.color == Color.White:
+                        if target in pos_white:
+                            seen[idx] = True
+                            continue
+                        elif target in pos_black:
+                            seen[idx] = True
+                    else:
+                        if target in pos_black:
+                            seen[idx] = True
+                            continue
+                        elif target in pos_white:
+                            seen[idx] = True
+                    if not self.is_king_in_check_after(figure, target):
+                        move = self.get_move(figure, target)
+                        notation_info = self.get_info(figure, target)
+                        moves.append((move, notation_info))
+
+        return moves
+
     def all_legal_moves(self, color):
         moves = []
         for figure in list(self.in_play):
             if figure.color != color:
                 continue
-            for dx, dy in figure.possible_moves:
-                target = (figure.position[0] + dx, figure.position[1] + dy)
-                if not self.is_legal(figure, target):
-                    continue
-                if figure.name == Name.Pawn and target[0] in {1,8}:
-                    for piece in PROMOTION_PIECES:
-                        move = self.get_move(figure, target, promo_piece=piece)
-                        notation_info = self.get_info(figure, target, promo_piece=piece)
-                        moves.append((move, notation_info))
-                else:
-                    move = self.get_move(figure, target)
-                    notation_info = self.get_info(figure, target)
-                    moves.append((move, notation_info))
+            for bundle in self.figure_legal_moves(figure):
+                moves.append(bundle)
         return moves
 
     def all_legal_moves_after(self, figure, target, *, color=None, promo_piece=None):
