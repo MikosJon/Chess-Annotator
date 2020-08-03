@@ -27,6 +27,8 @@ class CLI:
                     print('Preveč figur lahko opravi to potezo!')
                 elif message == 'Illegal move':
                     print('Ilegalna poteza!')
+                elif message == 'Wrong notation':
+                    print('Napačna notacija')
                 else:
                     print('Nepricakovana napaka!')
                     raise
@@ -69,13 +71,7 @@ class CLI:
             move, notation_info = choice(all_legal_moves)
 
             fig_notation = to_figurine_notation(self.game.get_figure_by_pos(move.start), move.target, notation_info)
-            notation = ''
-            for char in fig_notation:
-                if char in FROM_FIGURINE:
-                    notation += TO_ALGEBRAIC.get(FROM_FIGURINE[char][0], '')
-                else:
-                    notation += char
-            self.game.make_move_from_notation(notation, self.current_color)
+            self.game.make_move_from_notation(fig_notation, self.current_color)
 
             print(fig_notation)
             print('Vse možne poteze:', legal_move_notations)
@@ -92,5 +88,5 @@ class CLI:
 
 vmesnik = CLI()
 # vmesnik.run_to_crash()
-# vmesnik.one_game(200)
+# vmesnik.one_game(300)
 vmesnik.run()

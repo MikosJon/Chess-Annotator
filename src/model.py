@@ -555,22 +555,22 @@ class Game:
             rook.position = rook_starting
         return moves
 
-    def make_move_from_notation(self, notation, color): # todo regex(?) check
-        notation = notation.replace('+', '')
-        notation = notation.replace('#', '')
+    def make_move_from_notation(self, notation, color):
+        if (match := parse_notation(notation)) is None:
+            raise ValueError('Wrong notation')
 
-        if 'O' in notation:
+        if match.group('castling'):
             figure = self.get_figures_by_name(Name.King, color)[0]
-            if notation.count('O') == 2:
-                if color == Color.White:
-                    target = (1, 7)
-                else:
-                    target = (8, 7)
-            else:
+            if match.group('long_castle'):
                 if color == Color.White:
                     target = (1, 3)
                 else:
                     target = (8, 3)
+            else:
+                if color == Color.White:
+                    target = (1, 7)
+                else:
+                    target = (8, 7)
 
             if not self.is_legal(figure, target):
                 raise ValueError('Illegal move')
@@ -598,32 +598,29 @@ class Game:
 
             return None
 
-        if '=' in notation:
-            promo_piece = FROM_ALGEBRAIC[notation[-1]]
-            notation = notation[:-2]
-        else:
-            promo_piece = None
-
-        if notation[0] in ALGEBRAIC_NAMES:
-            name = FROM_ALGEBRAIC[notation[0]]
-            notation = notation[1:]
-        else:
+        if not (notation_name := match.group('name')):
             name = Name.Pawn
+        elif notation_name in ALGEBRAIC_NAMES:
+            name = FROM_ALGEBRAIC[notation_name]
+        else:
+            name, fig_color = FROM_FIGURINE[notation_name]
+            if fig_color != color:
+                raise ValueError('Bad input - piece color and input color are different')
 
         figures = self.get_figures_by_name(name, color)
-        target = square_to_pos(notation[-2:])
+        target = square_to_pos(match.group('target'))
 
-        notation = notation.replace('x', '')
-        notation = notation[:-2]
+        rank = None
+        if (notation_rank := match.group('rank')):
+            rank = int(notation_rank)
+        file = match.group('file')
 
-        rank, file = None, None
-        if len(notation) == 1:
-            if notation in 'abcdefgh':
-                file = notation
+        promo_piece = None
+        if (notation_promo_piece := match.group('promo_piece')):
+            if notation_promo_piece in ALGEBRAIC_NAMES:
+                promo_piece = FROM_ALGEBRAIC[notation_promo_piece]
             else:
-                rank = int(notation)
-        elif len(notation) == 2:
-            rank, file = square_to_pos(notation)
+                promo_piece, _ = FROM_FIGURINE[notation_promo_piece]
 
         possible_figures = []
         for fig in figures:
