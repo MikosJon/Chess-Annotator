@@ -1,30 +1,5 @@
 from definicije import *
 
-class Figure:
-    def __init__(self, name, color, position, possible_moves):
-        self.name = name
-        self.color = color
-        self.position = position
-        self.possible_moves = possible_moves
-
-    @property
-    def rank(self):
-        return self.position[0]
-
-    @property
-    def file(self):
-        return 'abcdefgh'[self.position[1] - 1]
-
-    def as_piece(self):
-        if self.color == Color.White:
-            return TO_WHITE_PIECE[self.name]
-        else:
-            return TO_BLACK_PIECE[self.name]
-
-    def as_name(self):
-        return self.color.name + ' ' + self.name.name
-
-
 class Game:
     def __init__(self):
         self.in_play = set()
@@ -148,14 +123,17 @@ class Game:
             notation_info.captures = True
         return notation_info
 
-    def get_move(self, figure, target, *, promo_piece=None):
+    def get_move(self, figure, target, *, promo_piece=None, castling_checked=False):
         move = Move()
         move.piece = figure.name
         move.color = figure.color
         move.start = figure.position
         move.target = target
         move.en_passant = self.is_en_passant(figure, target)
-        move.castling = self.is_castling_legal(figure, target)
+        if castling_checked:
+            move.castling = True
+        else:
+            move.castling = self.is_castling_legal(figure, target)
         move.promo_piece = promo_piece
         return move
 
@@ -179,8 +157,8 @@ class Game:
                 return True
         return False
 
-    def is_move_possible(self, figure, target, *, check_flag=True):
-        if check_flag:
+    def is_move_possible(self, figure, target, *, ignore_king=False):
+        if not ignore_king:
             opponent_king = self.get_figures_by_name(Name.King, other_color(figure.color))[0]
             if target == opponent_king.position:
                 return False
@@ -354,7 +332,7 @@ class Game:
         for fig in list(self.in_play):
             if fig.color == color:
                 continue
-            if self.is_move_possible(fig, king.position, check_flag=False):
+            if self.is_move_possible(fig, king.position, ignore_king=True):
                 return True
         return False
 
@@ -459,8 +437,8 @@ class Game:
             if figure.name == Name.King:
                 for dy in {-2, 2}:
                     target = (figure.position[0], figure.position[1] + dy)
-                    if self.is_castling_legal(figure, target): # add a flag to not call is_castling_legal?
-                        move = self.get_move(figure, target)
+                    if self.is_castling_legal(figure, target):
+                        move = self.get_move(figure, target, castling_checked=True)
                         notation_info = self.get_info(figure, target)
                         moves.append((move, notation_info))
         else:
@@ -522,7 +500,6 @@ class Game:
         if removed_piece:
             self.remove_from_play(removed_piece)
         starting_position = figure.position
-        self.move_figure_to(figure, target, promo_piece=promo_piece)
 
         castling = self.is_castling_legal(figure, target)
         if castling:
@@ -538,7 +515,9 @@ class Game:
                 rook = self.get_figure_by_pos((row, 1))
                 rook_starting = rook.position
                 self.move_figure_to(rook, (row, 4))
-            castling = True
+            self.move_figure_to(figure, target)
+        else:
+            self.move_figure_to(figure, target, promo_piece=promo_piece)
 
         moves = self.all_legal_moves(color)
 
@@ -595,17 +574,11 @@ class Game:
             elif move.target[1] == 3:
                 rook = self.get_figure_by_pos((row, 1))
                 self.move_figure_to(rook, (row, 4))
-
             return None
 
-        if not (notation_name := match.group('name')):
-            name = Name.Pawn
-        elif notation_name in ALGEBRAIC_NAMES:
-            name = FROM_ALGEBRAIC[notation_name]
-        else:
-            name, fig_color = FROM_FIGURINE[notation_name]
-            if fig_color != color:
-                raise ValueError('Bad input - piece color and input color are different')
+        name, fig_color = FROM_NOTATION.get(match.group('name'), (Name.Pawn, color))
+        if fig_color and fig_color != color:
+            raise ValueError('Bad input - piece color and input color are different')
 
         figures = self.get_figures_by_name(name, color)
         target = square_to_pos(match.group('target'))
@@ -615,12 +588,7 @@ class Game:
             rank = int(notation_rank)
         file = match.group('file')
 
-        promo_piece = None
-        if (notation_promo_piece := match.group('promo_piece')):
-            if notation_promo_piece in ALGEBRAIC_NAMES:
-                promo_piece = FROM_ALGEBRAIC[notation_promo_piece]
-            else:
-                promo_piece, _ = FROM_FIGURINE[notation_promo_piece]
+        promo_piece = FROM_NOTATION.get(match.group('promo_piece'), None)
 
         possible_figures = []
         for fig in figures:

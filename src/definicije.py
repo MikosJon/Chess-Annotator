@@ -34,15 +34,39 @@ class Color(Enum):
     White = auto()
     Black = auto()
 
+class Figure:
+    def __init__(self, name, color, position, possible_moves):
+        self.name = name
+        self.color = color
+        self.position = position
+        self.possible_moves = possible_moves
+
+    @property
+    def rank(self):
+        return self.position[0]
+
+    @property
+    def file(self):
+        return 'abcdefgh'[self.position[1] - 1]
+
+    def as_piece(self):
+        if self.color == Color.White:
+            return TO_WHITE_PIECE[self.name]
+        else:
+            return TO_BLACK_PIECE[self.name]
+
+    def as_name(self):
+        return self.color.name + ' ' + self.name.name
+
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
-KING_MOVES       = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-ROOK_MOVES       = [(0, x) for x in range(-7, 8) if x != 0] + [(x, 0) for x in range(-7, 8) if x != 0]
-BISHOP_MOVES     = [(x, x) for x in range(-7, 8) if x != 0] + [(x, -x) for x in range(-7, 8) if x != 0]
-QUEEN_MOVES      = ROOK_MOVES + BISHOP_MOVES
-KNIGHT_MOVES     = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]
-WHITE_PAWN_MOVES = [(1, -1), (1, 0), (2, 0), (1, 1)]
-BLACK_PAWN_MOVES = [(-1, -1), (-1, 0), (-2, 0), (-1, 1)]
+KING_MOVES       = {(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)}
+ROOK_MOVES       = {(0, x) for x in range(-7, 8) if x != 0} | {(x, 0) for x in range(-7, 8) if x != 0}
+BISHOP_MOVES     = {(x, x) for x in range(-7, 8) if x != 0} | {(x, -x) for x in range(-7, 8) if x != 0}
+QUEEN_MOVES      = ROOK_MOVES | BISHOP_MOVES
+KNIGHT_MOVES     = {(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)}
+WHITE_PAWN_MOVES = {(1, -1), (1, 0), (2, 0), (1, 1)}
+BLACK_PAWN_MOVES = {(-1, -1), (-1, 0), (-2, 0), (-1, 1)}
 
 PROMOTION_MOVES = {
     Name.Queen:  QUEEN_MOVES,
@@ -52,7 +76,7 @@ PROMOTION_MOVES = {
 }
 PROMOTION_PIECES = {Name.Queen, Name.Rook, Name.Bishop, Name.Knight}
 
-FROM_FIGURINE = {
+FROM_NOTATION = {
     '\u2654': (Name.King, Color.White),
     '\u2655': (Name.Queen, Color.White),
     '\u2656': (Name.Rook, Color.White),
@@ -65,8 +89,15 @@ FROM_FIGURINE = {
     '\u265C': (Name.Rook, Color.Black),
     '\u265D': (Name.Bishop, Color.Black),
     '\u265E': (Name.Knight, Color.Black),
-    '\u265F': (Name.Pawn, Color.Black)
+    '\u265F': (Name.Pawn, Color.Black),
+
+    'K': (Name.King, None),
+    'Q': (Name.Queen, None),
+    'R': (Name.Rook, None),
+    'B': (Name.Bishop, None),
+    'N': (Name.Knight, None)
 }
+
 TO_WHITE_PIECE = {
     Name.King:   '\u2654',
     Name.Queen:  '\u2655',
@@ -84,13 +115,6 @@ TO_BLACK_PIECE = {
     Name.Pawn:   '\u265F',
 }
 
-FROM_ALGEBRAIC = {
-    'K': Name.King,
-    'Q': Name.Queen,
-    'R': Name.Rook,
-    'B': Name.Bishop,
-    'N': Name.Knight
-}
 TO_ALGEBRAIC = {
     Name.King:   'K',
     Name.Queen:  'Q',
