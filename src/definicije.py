@@ -34,6 +34,12 @@ class Color(Enum):
     White = auto()
     Black = auto()
 
+class GameState(Enum):
+    Normal = auto()
+    Draw = auto()
+    White = auto()
+    Black = auto()
+
 class Figure:
     def __init__(self, name, color, position, possible_moves):
         self.name = name

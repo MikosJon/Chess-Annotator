@@ -8,6 +8,9 @@ class Game:
 
         self.moves = []
 
+        self.current_color = Color.White
+        self.game_state = GameState.Normal
+
         self.white_short_castle = True
         self.white_long_castle = True
         self.black_short_castle = True
@@ -84,17 +87,47 @@ class Game:
         self.in_play.remove(promoted_piece)
         self.in_play.add(pawn)
 
-    def is_stalemate(self, color):
-        if self.is_king_in_check_now(color):
-            return False
-        for figure in self.in_play:
-            if figure.color == color:
-                if len(self.figure_legal_moves(figure)) != 0:
-                    return False
-        return True
+    def update_game_state(self):
+        if len(self.in_play) <= 4:
+            self.check_forced_draw()
+        if self.moves[-1][1].mate:
+            if self.last_move.color == Color.White:
+                self.game_state = GameState.White
+            else:
+                self.game_state = GameState.Black
+        elif not self.is_king_in_check_now(self.current_color):
+            for figure in self.in_play:
+                if figure.color == self.current_color:
+                    if len(self.figure_legal_moves(figure)) != 0:
+                        break
+            else:
+                self.game_state = GameState.Draw
 
-    def is_mate(self):
-        return self.moves[-1][1].mate
+    def check_forced_draw(self):
+        white = []
+        black = []
+        for fig in self.in_play:
+            if fig.name == Name.King:
+                continue
+            if fig.name != Name.Knight and fig.name != Name.Bishop:
+                return None
+            if fig.color == Color.White:
+                white.append(fig)
+            else:
+                black.append(fig)
+        if len(white) >= 2 or len(black) >= 2:
+            return None
+        if len(white) == 1 and len(black) == 1:
+            white_minor = white[0]
+            black_minor = black[0]
+            if white_minor.name != Name.Bishop or black_minor.name != Name.Bishop:
+                return None
+            white_checksum = sum(white_minor.position) % 2
+            black_checksum = sum(black_minor.position) % 2
+            if white_checksum == black_checksum:
+                self.game_state = GameState.Draw
+        else:
+            self.game_state = GameState.Draw
 
     def get_info(self, figure, target, *, promo_piece=None):
         notation_info = NotationInfo()
@@ -150,6 +183,8 @@ class Game:
         if figure.name == Name.Pawn and target[0] in {1, 8}:
             if promo_piece is not None:
                 self.promote_pawn(figure, promo_piece)
+            else:
+                raise ValueError('Missing promotion piece')
 
     def is_legal(self, figure, target, *, promo_piece=None):
         if self.is_move_possible(figure, target):
@@ -364,7 +399,7 @@ class Game:
                 rook = self.get_figure_by_pos((row, 1))
                 rook_starting = rook.position
                 self.move_figure_to(rook, (row, 4))
-            self.move_figure_to(figure, target, promo_piece=promo_piece)
+            self.move_figure_to(figure, target)
         else:
             self.move_figure_to(figure, target, promo_piece=promo_piece)
 
@@ -417,10 +452,18 @@ class Game:
                 else:
                     if target in pos_black or target in pos_white:
                         continue
-                if not self.is_king_in_check_after(figure, target):
-                    move = self.get_move(figure, target)
-                    notation_info = self.get_info(figure, target)
-                    moves.append((move, notation_info))
+                if target[0] not in {1, 8}:
+                    if not self.is_king_in_check_after(figure, target):
+                        move = self.get_move(figure, target)
+                        notation_info = self.get_info(figure, target)
+                        moves.append((move, notation_info))
+                else:
+                    for promo_piece in PROMOTION_PIECES:
+                        if not self.is_king_in_check_after(figure, target, promo_piece=promo_piece):
+                            move = self.get_move(figure, target, promo_piece=promo_piece)
+                            notation_info = self.get_info(figure, target, promo_piece=promo_piece)
+                            moves.append((move, notation_info))
+
         elif figure.name == Name.King or figure.name == Name.Knight:
             for dx, dy in figure.possible_moves:
                 target = (figure.position[0] + dx, figure.position[1] + dy)
@@ -534,19 +577,22 @@ class Game:
             rook.position = rook_starting
         return moves
 
-    def make_move_from_notation(self, notation, color):
+    def make_move_from_notation(self, notation):
+        if self.game_state != GameState.Normal:
+            raise ValueError('Game is already over')
+
         if (match := parse_notation(notation)) is None:
             raise ValueError('Wrong notation')
 
         if match.group('castling'):
-            figure = self.get_figures_by_name(Name.King, color)[0]
+            figure = self.get_figures_by_name(Name.King, self.current_color)[0]
             if match.group('long_castle'):
-                if color == Color.White:
+                if self.current_color == Color.White:
                     target = (1, 3)
                 else:
                     target = (8, 3)
             else:
-                if color == Color.White:
+                if self.current_color == Color.White:
                     target = (1, 7)
                 else:
                     target = (8, 7)
@@ -574,13 +620,16 @@ class Game:
             elif move.target[1] == 3:
                 rook = self.get_figure_by_pos((row, 1))
                 self.move_figure_to(rook, (row, 4))
+
+            self.current_color = other_color(self.current_color)
+            self.update_game_state()
             return None
 
-        name, fig_color = FROM_NOTATION.get(match.group('name'), (Name.Pawn, color))
-        if fig_color and fig_color != color:
+        name, fig_color = FROM_NOTATION.get(match.group('name'), (Name.Pawn, self.current_color))
+        if fig_color and fig_color != self.current_color:
             raise ValueError('Bad input - piece color and input color are different')
 
-        figures = self.get_figures_by_name(name, color)
+        figures = self.get_figures_by_name(name, self.current_color)
         target = square_to_pos(match.group('target'))
 
         rank = None
@@ -588,11 +637,11 @@ class Game:
             rank = int(notation_rank)
         file = match.group('file')
 
-        promo_piece = FROM_NOTATION.get(match.group('promo_piece'), None)
+        promo_piece, _ = FROM_NOTATION.get(match.group('promo_piece'), (None, None))
 
         possible_figures = []
         for fig in figures:
-            if not self.is_legal(fig, target):
+            if not self.is_legal(fig, target, promo_piece=promo_piece):
                 continue
             if rank and fig.rank != rank:
                 continue
@@ -632,3 +681,6 @@ class Game:
 
         elif figure is self.black_long_rook:
             self.black_long_castle = False
+
+        self.current_color = other_color(self.current_color)
+        self.update_game_state()

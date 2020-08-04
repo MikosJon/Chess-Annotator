@@ -6,21 +6,16 @@ from definicije import *
 class CLI:
     def __init__(self):
         self.game = Game()
-        self.current_color = Color.White
 
     def run(self):
         print('-----------------------------------------------')
         print(self.game.printable_state())
         print()
         while True:
-            if self.game.is_stalemate(self.current_color):
-                print('Pat!', '1/2 - 1/2')
-                break
-
             try:
-                color = 'Beli' if self.current_color == Color.White else 'Črni'
+                color = 'Beli' if self.game.current_color == Color.White else 'Črni'
                 notation = input(f'{color} ima potezo (Vnesi notacijo): ')
-                self.game.make_move_from_notation(notation, self.current_color)
+                self.game.make_move_from_notation(notation)
             except ValueError as err:
                 message = err.args[0]
                 if message == 'Not enough info':
@@ -38,11 +33,15 @@ class CLI:
                 print('Nepricakovana napaka!')
                 raise
             else:
-                if self.game.is_mate():
-                    result = '1 - 0' if self.current_color == Color.White else '0 - 1'
-                    print(f'{color} zmaga!', result)
+                if self.game.game_state == GameState.White:
+                    print('Beli zmaga! 1 - 0')
                     break
-                self.current_color = other_color(self.current_color)
+                elif self.game.game_state == GameState.Black:
+                    print('Črni zmaga! 0 - 1')
+                    break
+                elif self.game.game_state == GameState.Draw:
+                    print('Pat! 1/2 - 1/2')
+                    break
             finally:
                 print()
                 print('-----------------------------------------------')
@@ -52,11 +51,12 @@ class CLI:
     def run_to_crash(self):
         while True:
             self.__init__()
-            self.one_game(200)
+            self.one_game()
 
-    def one_game(self, num_moves):
-        for _ in range(num_moves):
-            all_legal_moves = self.game.all_legal_moves(self.current_color)
+    def one_game(self):
+        i = 2
+        while True:
+            all_legal_moves = self.game.all_legal_moves(self.game.current_color)
             notations = []
             for move, notation_info in all_legal_moves:
                 figure = self.game.get_figure_by_pos(move.start)
@@ -64,29 +64,30 @@ class CLI:
                 notations.append(to_figurine_notation(figure, target, notation_info))
             legal_move_notations = ' '.join(sorted(notations))
 
-            if self.game.is_stalemate(self.current_color):
-                print('Pat')
-                break
-
             move, notation_info = choice(all_legal_moves)
 
             fig_notation = to_figurine_notation(self.game.get_figure_by_pos(move.start), move.target, notation_info)
-            self.game.make_move_from_notation(fig_notation, self.current_color)
+            self.game.make_move_from_notation(fig_notation)
 
-            print(fig_notation)
+            print(fig_notation, str(i // 2))
             print('Vse možne poteze:', legal_move_notations)
             print(self.game.printable_state())
             print()
 
-            if self.game.is_mate():
-                barva = 'Beli' if self.current_color == Color.White else 'Črni'
-                print('Konec igre!', barva, 'zmaga!')
+            if self.game.game_state == GameState.White:
+                print('Beli zmaga! 1 - 0')
+                break
+            elif self.game.game_state == GameState.Black:
+                print('Črni zmaga! 0 - 1')
+                break
+            elif self.game.game_state == GameState.Draw:
+                print('Pat! 1/2 - 1/2')
                 break
 
-            self.current_color = other_color(self.current_color)
+            i += 1
 
 
 vmesnik = CLI()
 # vmesnik.run_to_crash()
-# vmesnik.one_game(300)
-vmesnik.run()
+vmesnik.one_game()
+# vmesnik.run()
