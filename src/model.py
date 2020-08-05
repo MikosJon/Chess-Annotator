@@ -16,6 +16,11 @@ class Game:
         self.black_short_castle = True
         self.black_long_castle = True
 
+        self.en_passant_position = None
+
+        self.half_move_number = 0
+        self.full_move_number = 1
+
         self.white_long_rook = Figure(Name.Rook, Color.White, (1, 1), ROOK_MOVES)
         self.white_short_rook = Figure(Name.Rook, Color.White, (1, 8), ROOK_MOVES)
 
@@ -45,6 +50,8 @@ class Game:
         self.in_play.add(Figure(Name.Knight, Color.Black, (8, 7), KNIGHT_MOVES))
         for i in range(1, 9):
             self.in_play.add(Figure(Name.Pawn, Color.Black, (7, i), BLACK_PAWN_MOVES))
+
+        self.states = [' '.join(self.generate_FEN().split()[:-2])]
 
     @property
     def last_move(self):
@@ -88,6 +95,15 @@ class Game:
         self.in_play.add(pawn)
 
     def update_game_state(self):
+        self.current_color = other_color(self.current_color)
+
+        if self.last_move.color == Color.Black:
+            self.full_move_number += 1
+        if self.last_move.piece == Name.Pawn or self.moves[-1][1].captures:
+            self.half_move_number = 0
+        else:
+            self.half_move_number += 1
+
         if len(self.in_play) <= 4:
             self.check_forced_draw()
         if self.moves[-1][1].mate:
@@ -101,6 +117,16 @@ class Game:
                     if len(self.figure_legal_moves(figure)) != 0:
                         break
             else:
+                self.game_state = GameState.Draw
+
+        current_fen = self.generate_FEN()
+        save_state = ' '.join(current_fen.split()[:-2])
+        self.states.append(save_state)
+
+        if self.game_state == GameState.Normal:
+            if self.states.count(save_state) == 5:
+                self.game_state = GameState.Draw
+            if self.half_move_number == 150:
                 self.game_state = GameState.Draw
 
     def check_forced_draw(self):
@@ -128,6 +154,45 @@ class Game:
                 self.game_state = GameState.Draw
         else:
             self.game_state = GameState.Draw
+
+    def generate_FEN(self):
+        pieces = ''
+        board = [[None] * 8 for _ in range(8)]
+        for figure in self.in_play:
+            board[figure.position[0] - 1][figure.position[1] - 1] = figure
+        for row in reversed(board):
+            empty = 0
+            for fig in row:
+                if fig is None:
+                    empty += 1
+                else:
+                    if empty != 0:
+                        pieces += str(empty)
+                    empty = 0
+                    pieces += TO_FEN[(fig.name, fig.color)]
+            if empty != 0:
+                pieces += str(empty)
+            pieces += '/'
+
+        color = 'w' if self.current_color == Color.White else 'b'
+
+        castling = ''
+        if self.white_short_castle:
+            castling += 'K'
+        if self.white_long_castle:
+            castling += 'Q'
+        if self.black_short_castle:
+            castling += 'k'
+        if self.black_long_castle:
+            castling += 'q'
+        if castling == '':
+            castling = '-'
+
+        en_passant = pos_to_square(self.en_passant_position) if self.en_passant_position else '-'
+        half_move = str(self.half_move_number)
+        full_move = str(self.full_move_number)
+
+        return ' '.join([pieces, color, castling, en_passant, half_move, full_move])
 
     def get_info(self, figure, target, *, promo_piece=None):
         notation_info = NotationInfo()
@@ -178,6 +243,15 @@ class Game:
 
         if captured_figure:
             self.remove_from_play(captured_figure)
+
+        if figure.name == Name.Pawn and target[0] in {4, 5} and figure.position[0] in {2, 7}:
+            if figure.position[0] == 2:
+                self.en_passant_position = (3, figure.position[1])
+            else:
+                self.en_passant_position = (6, figure.position[1])
+        else:
+            self.en_passant_position = None
+
         figure.position = target
 
         if figure.name == Name.Pawn and target[0] in {1, 8}:
@@ -342,25 +416,9 @@ class Game:
         return True
 
     def is_en_passant(self, pawn, target):
-        if pawn.name != Name.Pawn:
+        if pawn.name != Name.Pawn or pawn.color != self.current_color:
             return False
-        if len(self.moves) == 0:
-            return False
-        if self.last_move.color != other_color(pawn.color):
-            return False
-        if self.last_move.piece != Name.Pawn:
-            return False
-        if pawn.position[0] != self.last_move.target[0]:
-            return False
-        if target[1] != self.last_move.target[1]:
-            return False
-        if self.last_move.start[0] == 2 and self.last_move.target[0] == 4:
-            if target[0] != 3:
-                return False
-        if self.last_move.start[0] == 7 and self.last_move.target[0] == 5:
-            if target[0] != 6:
-                return False
-        return True
+        return self.en_passant_position == target
 
     def is_king_in_check_now(self, color):
         king = self.get_figures_by_name(Name.King, color)[0]
@@ -384,6 +442,7 @@ class Game:
             self.remove_from_play(removed_piece)
 
         starting_position = figure.position
+        en_passant = self.en_passant_position
         castling = self.is_castling_legal(figure, target)
 
         if castling:
@@ -413,6 +472,7 @@ class Game:
             self.captured.remove(removed_piece)
 
         figure.position = starting_position
+        self.en_passant_position = en_passant
 
         if castling:
             rook.position = rook_starting
@@ -543,6 +603,7 @@ class Game:
         if removed_piece:
             self.remove_from_play(removed_piece)
         starting_position = figure.position
+        en_passant = self.en_passant_position
 
         castling = self.is_castling_legal(figure, target)
         if castling:
@@ -572,6 +633,7 @@ class Game:
             self.captured.remove(removed_piece)
 
         figure.position = starting_position
+        self.en_passant_position = en_passant
 
         if castling:
             rook.position = rook_starting
@@ -585,7 +647,7 @@ class Game:
             raise ValueError('Wrong notation')
 
         if match.group('castling'):
-            figure = self.get_figures_by_name(Name.King, self.current_color)[0]
+            king = self.get_figures_by_name(Name.King, self.current_color)[0]
             if match.group('long_castle'):
                 if self.current_color == Color.White:
                     target = (1, 3)
@@ -597,37 +659,36 @@ class Game:
                 else:
                     target = (8, 7)
 
-            if not self.is_legal(figure, target):
+            if not self.is_legal(king, target):
                 raise ValueError('Illegal move')
 
-            move = self.get_move(figure, target)
-            notation_info = self.get_info(figure, target)
+            move = self.get_move(king, target)
+            notation_info = self.get_info(king, target)
 
-            self.move_figure_to(figure, target)
+            king.position = target
             self.moves.append((move, notation_info))
 
-            if figure.color == Color.White:
-                row = 1
-                self.white_short_castle = False
+            if king.color == Color.White:
                 self.white_long_castle = False
+                self.white_short_castle = False
+                if target[1] == 3:
+                    self.white_long_rook.position = (1, 4)
+                else:
+                    self.white_short_rook.position = (1, 5)
             else:
-                row = 8
-                self.black_short_castle = False
                 self.black_long_castle = False
-            if move.target[1] == 7:
-                rook = self.get_figure_by_pos((row, 8))
-                self.move_figure_to(rook, (row, 6))
-            elif move.target[1] == 3:
-                rook = self.get_figure_by_pos((row, 1))
-                self.move_figure_to(rook, (row, 4))
+                self.black_short_castle = False
+                if target[1] == 3:
+                    self.black_long_rook.position = (8, 4)
+                else:
+                    self.black_short_rook.position = (8, 5)
 
-            self.current_color = other_color(self.current_color)
             self.update_game_state()
             return None
 
         name, fig_color = FROM_NOTATION.get(match.group('name'), (Name.Pawn, self.current_color))
         if fig_color and fig_color != self.current_color:
-            raise ValueError('Bad input - piece color and input color are different')
+            raise ValueError('Bad input - piece color and current color are different')
 
         figures = self.get_figures_by_name(name, self.current_color)
         target = square_to_pos(match.group('target'))
@@ -682,5 +743,60 @@ class Game:
         elif figure is self.black_long_rook:
             self.black_long_castle = False
 
-        self.current_color = other_color(self.current_color)
+        self.update_game_state()
+
+    def make_move(self, move):
+        if self.game_state != GameState.Normal:
+            raise ValueError('Game is already over')
+
+        if move.color != self.current_color:
+            raise ValueError('Bad input - piece color and input color are different')
+
+        figure = self.get_figure_by_pos(move.start)
+
+        if not self.is_legal(figure, move.target, promo_piece=move.promo_piece):
+            raise ValueError('Illegal move')
+
+        notation_info = self.get_info(figure, move.target, promo_piece=move.promo_piece)
+        self.moves.append((move, notation_info))
+
+        if move.castling:
+            if move.color == Color.White:
+                self.white_long_castle = False
+                self.white_short_castle = False
+                if move.target[1] == 3:
+                    self.white_long_rook.position = (1, 4)
+                else:
+                    self.white_short_rook.position = (1, 5)
+            else:
+                self.black_long_castle = False
+                self.black_short_castle = False
+                if move.target[1] == 3:
+                    self.black_long_rook.position = (8, 4)
+                else:
+                    self.black_short_rook.position = (8, 5)
+            figure.position = move.target
+        else:
+            self.move_figure_to(figure, move.target, promo_piece=move.promo_piece)
+
+        if figure.name == Name.King:
+            if figure.color == Color.White:
+                self.white_short_castle = False
+                self.white_long_castle = False
+            else:
+                self.black_short_castle = False
+                self.black_long_castle = False
+
+        if figure is self.white_short_rook:
+            self.white_short_castle = False
+
+        elif figure is self.white_long_rook:
+            self.white_long_castle = False
+
+        elif figure is self.black_short_rook:
+            self.black_short_castle = False
+
+        elif figure is self.black_long_rook:
+            self.black_long_castle = False
+
         self.update_game_state()

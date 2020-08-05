@@ -82,6 +82,22 @@ PROMOTION_MOVES = {
 }
 PROMOTION_PIECES = {Name.Queen, Name.Rook, Name.Bishop, Name.Knight}
 
+TO_FEN = {
+    (Name.King, Color.White)   : 'K',
+    (Name.Queen, Color.White)  : 'Q',
+    (Name.Rook, Color.White)   : 'R',
+    (Name.Bishop, Color.White) : 'B',
+    (Name.Knight, Color.White) : 'N',
+    (Name.Pawn, Color.White)   : 'P',
+
+    (Name.King, Color.Black)   : 'k',
+    (Name.Queen, Color.Black)  : 'q',
+    (Name.Rook, Color.Black)   : 'r',
+    (Name.Bishop, Color.Black) : 'b',
+    (Name.Knight, Color.Black) : 'n',
+    (Name.Pawn, Color.Black)   : 'p'
+}
+
 FROM_NOTATION = {
     '\u2654': (Name.King, Color.White),
     '\u2655': (Name.Queen, Color.White),
@@ -154,14 +170,14 @@ def parse_notation(notation):
     elif m := re.fullmatch(R_CASTLING, notation):
         return m
 
-def to_figurine_notation(figure, target, notation_info):
+def to_figurine_notation(move, notation_info):
     out = ''
-    if figure.name == Name.Pawn:
+    if move.piece == Name.Pawn:
         if notation_info.captures:
-            out += figure.file
+            out += 'abcdefgh'[move.start[1] - 1]
             out += 'x'
-    elif figure.name == Name.King and abs(figure.position[1] - target[1]) == 2:
-        if target[1] == 7:
+    elif move.castling:
+        if move.target[1] == 7:
             out += 'O-O'
         else:
             out += 'O-O-O'
@@ -173,22 +189,25 @@ def to_figurine_notation(figure, target, notation_info):
 
         return out
     else:
-        out += figure.as_piece()
+        if move.color == Color.White:
+            out += TO_WHITE_PIECE[move.piece]
+        else:
+            out += TO_BLACK_PIECE[move.piece]
         if not notation_info.unique:
             if not notation_info.file:
-                out += figure.file
+                out += 'abcdefgh'[move.start[1] - 1]
             elif not notation_info.rank:
-                out += str(figure.rank)
+                out += str(move.start[0])
             else:
-                out += figure.file + str(figure.rank)
+                out += 'abcdefgh'[move.start[1] - 1] + str(move.start[0])
         if notation_info.captures:
             out += 'x'
 
-    out += pos_to_square(target)
+    out += pos_to_square(move.target)
 
     if notation_info.promotion is not None:
         out += '='
-        if figure.color == Color.White:
+        if move.color == Color.White:
             out += TO_WHITE_PIECE[notation_info.promotion]
         else:
             out += TO_BLACK_PIECE[notation_info.promotion]
