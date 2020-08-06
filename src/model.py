@@ -834,7 +834,7 @@ class Game:
         if len(self.moves) == 0:
             raise ValueError('No moves to undo')
 
-        last_move, _ = self.moves.pop()
+        last_move, last_notation_info = self.moves.pop()
         self.save_states.pop()
         self.half_move_memo.pop()
 
@@ -886,3 +886,5 @@ class Game:
             self.full_move_number -= 1
 
         self.current_color = last_move.color
+
+        return last_move, last_notation_info
