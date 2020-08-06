@@ -11,6 +11,8 @@ class Game:
         self.current_color = Color.White
         self.game_state = GameState.Normal
 
+        self.claimable_draw = False
+
         self.white_short_castle = True
         self.white_long_castle = True
         self.black_short_castle = True
@@ -59,13 +61,13 @@ class Game:
 
     def printable_state(self):
         out = ''
-        board = [['.'] * 8 for _ in range(8)]
+        board = [['·'] * 8 for _ in range(8)]
         for fig in self.in_play:
             row, col = fig.position
             board[row-1][col-1] = fig.as_piece()
         for i, row in enumerate(reversed(board)):
-            out += ''.join(row) + ' ' + str(8 - i) + '\n'
-        out += 'abcdefgh'
+            out += ' '.join(row) + '  ' + str(8 - i) + '\n'
+        out += 'a b c d e f g h'
         return out
 
     def remove_from_play(self, figure):
@@ -93,6 +95,9 @@ class Game:
         promoted_piece = self.get_figure_by_pos(pawn.position)
         self.in_play.remove(promoted_piece)
         self.in_play.add(pawn)
+
+    def claim_draw(self):
+        self.game_state = GameState.Draw
 
     def update_game_state(self):
         self.current_color = other_color(self.current_color)
@@ -124,10 +129,19 @@ class Game:
         self.states.append(save_state)
 
         if self.game_state == GameState.Normal:
-            if self.states.count(save_state) == 5:
+            repetition = self.states.count(save_state)
+            if repetition == 5:
                 self.game_state = GameState.Draw
+            elif repetition >= 3:
+                self.claimable_draw = True
+
             if self.half_move_number == 150:
                 self.game_state = GameState.Draw
+            elif self.half_move_number >= 100:
+                self.claimable_draw = True
+
+            if repetition < 3 and self.half_move_number < 100:
+                self.claimable_draw = False
 
     def check_forced_draw(self):
         white = []
@@ -674,14 +688,14 @@ class Game:
                 if target[1] == 3:
                     self.white_long_rook.position = (1, 4)
                 else:
-                    self.white_short_rook.position = (1, 5)
+                    self.white_short_rook.position = (1, 6)
             else:
                 self.black_long_castle = False
                 self.black_short_castle = False
                 if target[1] == 3:
                     self.black_long_rook.position = (8, 4)
                 else:
-                    self.black_short_rook.position = (8, 5)
+                    self.black_short_rook.position = (8, 6)
 
             self.update_game_state()
             return None
@@ -767,14 +781,14 @@ class Game:
                 if move.target[1] == 3:
                     self.white_long_rook.position = (1, 4)
                 else:
-                    self.white_short_rook.position = (1, 5)
+                    self.white_short_rook.position = (1, 6)
             else:
                 self.black_long_castle = False
                 self.black_short_castle = False
                 if move.target[1] == 3:
                     self.black_long_rook.position = (8, 4)
                 else:
-                    self.black_short_rook.position = (8, 5)
+                    self.black_short_rook.position = (8, 6)
             figure.position = move.target
         else:
             self.move_figure_to(figure, move.target, promo_piece=move.promo_piece)

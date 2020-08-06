@@ -1,4 +1,5 @@
 from random import choice
+from functools import partial
 
 from model import Game
 from definicije import *
@@ -7,15 +8,102 @@ class CLI:
     def __init__(self):
         self.game = Game()
 
-    def run(self):
+    def main_loop(self):
+        while True:
+            while True:
+                print('Proti komu bi rad igral?')
+                print('1 - sebi')
+                print('2 - naključnemu računalniku')
+                opponent = input('-> ')
+                print()
+                if opponent in '12':
+                    break
+            if opponent == '1':
+                self.run_game(self.vs_yourself)
+            else:
+                while True:
+                    print('Izberi barvo figur, s katerimi želiš igrati')
+                    print('1 - bele')
+                    print('2 - črne')
+                    print('3 - naključne')
+                    color = input('-> ')
+                    print()
+                    if color in '123':
+                        break
+                if color == '1':
+                    self.run_game(partial(self.vs_random_cpu, Color.White))
+                elif color == '2':
+                    self.run_game(partial(self.vs_random_cpu, Color.Black))
+                else:
+                    self.run_game(partial(self.vs_random_cpu, choice([Color.White, Color.Black])))
+            while True:
+                print('Želiš igrati še enkrat [Yy/Nn]? ')
+                replay = input('-> ')
+                if replay in 'YyNn':
+                    break
+            if replay.upper() == 'N':
+                break
+            else:
+                print()
+                self.__init__()
+
+    def inquire_draw(self):
+        while True:
+            print('Lahko razglasiš pat [Yy/Nn]:')
+            draw = input('-> ')
+            if draw in 'YNyn':
+                break
+        if draw.upper() == 'Y':
+            self.game.claim_draw()
+
+    def vs_yourself(self):
+        color = 'Beli' if self.game.current_color == Color.White else 'Črni'
+
+        if self.game.claimable_draw:
+            self.inquire_draw()
+
+        else:
+            print(f'{color} ima potezo (Vnesi notacijo): ')
+            notation = input('-> ')
+            self.game.make_move_from_notation(notation)
+
+        if self.game.claimable_draw:
+            self.inquire_draw()
+
+    def vs_random_cpu(self, player_color):
+        if self.game.current_color == player_color:
+            if self.game.claimable_draw:
+                self.inquire_draw()
+
+            else:
+                print('Si na potezi (Vnesi notacijo): ')
+                notation = input('-> ')
+                print(notation, '| Poteza #' + str(self.game.full_move_number))
+                self.game.make_move_from_notation(notation)
+
+            if self.game.claimable_draw:
+                self.inquire_draw()
+        else:
+            all_legal_moves = self.game.all_legal_moves(self.game.current_color)
+            move, notation_info = choice(all_legal_moves)
+
+            if self.game.claimable_draw:
+                self.game.claim_draw()
+            else:
+                fig_notation = to_figurine_notation(move, notation_info)
+                print(fig_notation, '| Poteza #' + str(self.game.full_move_number))
+                self.game.make_move(move)
+
+            if self.game.claimable_draw:
+                self.game.claim_draw()
+
+    def run_game(self, move_handler):
         print('-----------------------------------------------')
         print(self.game.printable_state())
         print()
         while True:
             try:
-                color = 'Beli' if self.game.current_color == Color.White else 'Črni'
-                notation = input(f'{color} ima potezo (Vnesi notacijo): ')
-                self.game.make_move_from_notation(notation)
+                move_handler()
             except ValueError as err:
                 message = err.args[0]
                 if message == 'Not enough info':
@@ -25,12 +113,12 @@ class CLI:
                 elif message == 'Wrong notation':
                     print('Napačna notacija')
                 else:
-                    print('Nepricakovana napaka!')
+                    print('Nepričakovana napaka!')
                     raise
             except KeyboardInterrupt:
                 raise
             except:
-                print('Nepricakovana napaka!')
+                print('Nepričakovana napaka!')
                 raise
             else:
                 if self.game.game_state == GameState.White:
@@ -43,7 +131,6 @@ class CLI:
                     print('Pat! 1/2 - 1/2')
                     break
             finally:
-                print()
                 print('-----------------------------------------------')
                 print(self.game.printable_state())
                 print()
@@ -63,10 +150,16 @@ class CLI:
 
             move, notation_info = choice(all_legal_moves)
 
-            fig_notation = to_figurine_notation(move, notation_info)
-            print(fig_notation, str(self.game.full_move_number))
+            if self.game.claimable_draw:
+                self.game.claim_draw()
+            else:
+                fig_notation = to_figurine_notation(move, notation_info)
+                print(fig_notation, '| Poteza #' + str(self.game.full_move_number))
+                self.game.make_move(move)
 
-            self.game.make_move(move)
+            if self.game.claimable_draw:
+                self.game.claim_draw()
+
             print('Vse možne poteze:', legal_move_notations)
 
             print(self.game.printable_state())
@@ -87,5 +180,5 @@ class CLI:
 
 vmesnik = CLI()
 # vmesnik.run_to_crash()
-vmesnik.one_game()
-# vmesnik.run()
+# vmesnik.one_game()
+vmesnik.main_loop()
