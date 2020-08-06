@@ -21,6 +21,7 @@ class Move:
     promo_piece = None
     en_passant = False
     castling = False
+    captured = None
 
 class Name(Enum):
     King = auto()

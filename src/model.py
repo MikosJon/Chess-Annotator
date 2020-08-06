@@ -4,7 +4,7 @@ class Game:
     def __init__(self):
         self.in_play = set()
         self.captured = set()
-        self.promoted_pawns = set()
+        self.promoted_pawns = []
 
         self.moves = []
 
@@ -53,11 +53,16 @@ class Game:
         for i in range(1, 9):
             self.in_play.add(Figure(Name.Pawn, Color.Black, (7, i), BLACK_PAWN_MOVES))
 
-        self.states = [' '.join(self.generate_FEN().split()[:-2])]
+        self.save_states = [' '.join(self.generate_FEN().split()[:-2])]
+        self.half_move_memo = [0]
 
     @property
     def last_move(self):
         return self.moves[-1][0]
+
+    @property
+    def last_notation_info(self):
+        return self.moves[-1][1]
 
     def printable_state(self):
         out = ''
@@ -88,13 +93,19 @@ class Game:
 
     def promote_pawn(self, pawn, piece):
         self.in_play.remove(pawn)
-        self.promoted_pawns.add(pawn)
+        self.promoted_pawns.append(pawn)
         self.in_play.add(Figure(piece, pawn.color, pawn.position, PROMOTION_MOVES[piece]))
 
     def undo_promotion(self, pawn):
         promoted_piece = self.get_figure_by_pos(pawn.position)
         self.in_play.remove(promoted_piece)
         self.in_play.add(pawn)
+
+    def undo_last_move_promotion(self):
+        pawn = self.promoted_pawns.pop()
+        self.in_play.add(pawn)
+        promoted_piece = self.get_figure_by_pos(self.last_move.target)
+        self.in_play.remove(promoted_piece)
 
     def claim_draw(self):
         self.game_state = GameState.Draw
@@ -104,14 +115,14 @@ class Game:
 
         if self.last_move.color == Color.Black:
             self.full_move_number += 1
-        if self.last_move.piece == Name.Pawn or self.moves[-1][1].captures:
+        if self.last_move.piece == Name.Pawn or self.last_notation_info.captures:
             self.half_move_number = 0
         else:
             self.half_move_number += 1
 
         if len(self.in_play) <= 4:
             self.check_forced_draw()
-        if self.moves[-1][1].mate:
+        if self.last_notation_info.mate:
             if self.last_move.color == Color.White:
                 self.game_state = GameState.White
             else:
@@ -126,10 +137,11 @@ class Game:
 
         current_fen = self.generate_FEN()
         save_state = ' '.join(current_fen.split()[:-2])
-        self.states.append(save_state)
+        self.save_states.append(save_state)
+        self.half_move_memo.append(self.half_move_number)
 
         if self.game_state == GameState.Normal:
-            repetition = self.states.count(save_state)
+            repetition = self.save_states.count(save_state)
             if repetition == 5:
                 self.game_state = GameState.Draw
             elif repetition >= 3:
@@ -247,6 +259,7 @@ class Game:
         else:
             move.castling = self.is_castling_legal(figure, target)
         move.promo_piece = promo_piece
+        move.captured = self.get_figure_by_pos(target)
         return move
 
     def move_figure_to(self, figure, target, *, promo_piece=None):
@@ -697,6 +710,7 @@ class Game:
                 else:
                     self.black_short_rook.position = (8, 6)
 
+            self.en_passant_position = None
             self.update_game_state()
             return None
 
@@ -764,7 +778,7 @@ class Game:
             raise ValueError('Game is already over')
 
         if move.color != self.current_color:
-            raise ValueError('Bad input - piece color and input color are different')
+            raise ValueError('Bad input - piece color and current color are different')
 
         figure = self.get_figure_by_pos(move.start)
 
@@ -790,6 +804,7 @@ class Game:
                 else:
                     self.black_short_rook.position = (8, 6)
             figure.position = move.target
+            self.en_passant_position = None
         else:
             self.move_figure_to(figure, move.target, promo_piece=move.promo_piece)
 
@@ -814,3 +829,60 @@ class Game:
             self.black_long_castle = False
 
         self.update_game_state()
+
+    def undo_last_move(self):
+        if len(self.moves) == 0:
+            raise ValueError('No moves to undo')
+
+        last_move, _ = self.moves.pop()
+        self.save_states.pop()
+        self.half_move_memo.pop()
+
+        if last_move.castling:
+            if last_move.color == Color.White:
+                if last_move.target[1] == 3:
+                    king = self.get_figure_by_pos((1, 3))
+                    king.position = (1, 5)
+                    self.white_long_rook.position = (1, 1)
+                else:
+                    king = self.get_figure_by_pos((1, 7))
+                    king.position = (1, 5)
+                    self.white_short_rook.position = (1, 8)
+            else:
+                if last_move.target[1] == 3:
+                    king = self.get_figure_by_pos((8, 3))
+                    king.position = (8, 5)
+                    self.black_long_rook.position = (8, 1)
+                else:
+                    king = self.get_figure_by_pos((8, 7))
+                    king.position = (8, 5)
+                    self.black_short_rook.position = (8, 8)
+        else:
+            if last_move.promo_piece:
+                self.undo_last_move_promotion()
+            figure = self.get_figure_by_pos(last_move.target)
+
+            figure.position = last_move.start
+            if last_move.captured:
+                self.in_play.add(last_move.captured)
+
+        last_save_state = self.save_states[-1].split()
+
+        castling_rights = last_save_state[2]
+        self.white_long_castle = 'Q' in castling_rights
+        self.white_short_castle = 'K' in castling_rights
+        self.black_long_castle = 'q' in castling_rights
+        self.black_short_castle = 'k' in castling_rights
+
+        en_passant_square = last_save_state[3]
+        if en_passant_square == '-':
+            self.en_passant_position = None
+        else:
+            self.en_passant_position = square_to_pos(en_passant_square)
+
+        self.half_move_number = self.half_move_memo.pop()
+
+        if last_move.color == Color.Black:
+            self.full_move_number -= 1
+
+        self.current_color = last_move.color
