@@ -1,4 +1,4 @@
-from definicije import *
+from src.definicije import *
 
 class Game:
     def __init__(self):

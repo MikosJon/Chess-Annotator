@@ -1,12 +1,20 @@
 from random import choice
 from functools import partial
+import os
 
-from model import Game
-from definicije import *
+from src.model import Game
+from src.definicije import *
 
 class CLI:
     def __init__(self):
         self.game = Game()
+        if os.getcwd().endswith('Chess-Annotator'):
+            os.chdir('PGN')
+        else:
+            os.chdir('Chess-Annotator/PGN')
+
+        with open('movetext.txt', 'w') as f:
+            pass
 
     def main_loop(self):
         while True:
@@ -65,7 +73,19 @@ class CLI:
         else:
             print(f'{color} ima potezo (Vnesi notacijo): ')
             notation = input('-> ')
+            print(notation, '| Poteza #' + str(self.game.full_move_number))
             self.game.make_move_from_notation(notation)
+            print('-----------------------------------------------')
+            print(self.game.printable_state())
+            print()
+
+            with open('movetext.txt', 'a', encoding='utf-8') as f:
+                if self.game.current_color == Color.Black:
+                    if self.game.full_move_number == 1:
+                        f.write(str(self.game.full_move_number) + '.')
+                    else:
+                        f.write(' ' + str(self.game.full_move_number) + '.')
+                f.write(' ' + to_algebraic_notation(self.game.last_move, self.game.last_notation_info))
 
         if self.game.claimable_draw:
             self.inquire_draw()
@@ -79,7 +99,19 @@ class CLI:
                 print('Si na potezi (Vnesi notacijo): ')
                 notation = input('-> ')
                 print(notation, '| Poteza #' + str(self.game.full_move_number))
+
                 self.game.make_move_from_notation(notation)
+                print('-----------------------------------------------')
+                print(self.game.printable_state())
+                print()
+
+                with open('movetext.txt', 'a', encoding='utf-8') as f:
+                    if self.game.current_color == Color.Black:
+                        if self.game.full_move_number == 1:
+                            f.write(str(self.game.full_move_number) + '.')
+                        else:
+                            f.write(' ' + str(self.game.full_move_number) + '.')
+                    f.write(' ' + to_algebraic_notation(self.game.last_move, self.game.last_notation_info))
 
             if self.game.claimable_draw:
                 self.inquire_draw()
@@ -93,9 +125,56 @@ class CLI:
                 fig_notation = to_figurine_notation(move, notation_info)
                 print(fig_notation, '| Poteza #' + str(self.game.full_move_number))
                 self.game.make_move(move)
+                print('-----------------------------------------------')
+                print(self.game.printable_state())
+                print()
+
+                with open('movetext.txt', 'a', encoding='utf-8') as f:
+                    if self.game.current_color == Color.Black:
+                        if self.game.full_move_number == 1:
+                            f.write(str(self.game.full_move_number) + '.')
+                        else:
+                            f.write(' ' + str(self.game.full_move_number) + '.')
+                    f.write(' ' + to_algebraic_notation(self.game.last_move, self.game.last_notation_info))
 
             if self.game.claimable_draw:
                 self.game.claim_draw()
+
+    def annotation_handler(self):
+        while True:
+            print('Dodaj anotacije? [Yy/Nn]')
+            anno = input('-> ')
+            if anno in 'YyNn':
+                break
+        if anno.upper() == 'Y':
+            while True:
+                print('0 preskoči')
+                print('1 dobra poteza ("!")')
+                print('2 slaba poteza ("?")')
+                print('3 zelo dobra poteza ("!!")')
+                print('4 zelo slaba poteza ("??")')
+                print('5 zanimiva poteza ("!?")')
+                print('6 dvomljiva poteza ("?!")')
+
+                sign = input('-> ')
+                if sign in '123456':
+                    with open('movetext.txt', 'a', encoding='utf-8') as f:
+                        f.write(f'${sign}')
+                    break
+                elif sign == '0':
+                    break
+
+        while True:
+            print('Dodaj tekst? [Yy/Nn]')
+            text = input('-> ')
+            if text in 'YyNn':
+                break
+        if text.upper() == 'Y':
+            print('Vnesi tekst (\u21B5 konča vnos):')
+            comment = input('-> ')
+            if comment:
+                with open('movetext.txt', 'a', encoding='utf-8') as f:
+                    f.write(f' {{{comment}}}')
 
     def run_game(self, move_handler):
         print('-----------------------------------------------')
@@ -104,6 +183,7 @@ class CLI:
         while True:
             try:
                 move_handler()
+                self.annotation_handler()
             except ValueError as err:
                 message = err.args[0]
                 if message == 'Not enough info':
@@ -123,12 +203,18 @@ class CLI:
             else:
                 if self.game.game_state == GameState.White:
                     print('Beli zmaga! 1 - 0')
+                    with open('movetext.txt', 'a', encoding='utf-8') as f:
+                        f.write(' 1-0')
                     break
                 elif self.game.game_state == GameState.Black:
                     print('Črni zmaga! 0 - 1')
+                    with open('movetext.txt', 'a', encoding='utf-8') as f:
+                        f.write(' 0-1')
                     break
                 elif self.game.game_state == GameState.Draw:
                     print('Pat! 1/2 - 1/2')
+                    with open('movetext.txt', 'a', encoding='utf-8') as f:
+                        f.write(' 1/2-1/2')
                     break
             finally:
                 print('-----------------------------------------------')
@@ -169,16 +255,16 @@ class CLI:
 
             if self.game.game_state == GameState.White:
                 print('Beli zmaga! 1 - 0')
+                with open('movetext.txt', 'a', encoding='utf-8') as f:
+                    f.write(' 1-0')
                 break
             elif self.game.game_state == GameState.Black:
                 print('Črni zmaga! 0 - 1')
+                with open('movetext.txt', 'a', encoding='utf-8') as f:
+                    f.write(' 0-1')
                 break
             elif self.game.game_state == GameState.Draw:
                 print('Pat! 1/2 - 1/2')
+                with open('movetext.txt', 'a', encoding='utf-8') as f:
+                    f.write(' 1/2-1/2')
                 break
-
-
-vmesnik = CLI()
-# vmesnik.run_to_crash()
-# vmesnik.one_game()
-vmesnik.main_loop()

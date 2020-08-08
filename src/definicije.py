@@ -147,6 +147,23 @@ TO_ALGEBRAIC = {
 }
 ALGEBRAIC_NAMES = {'K', 'Q', 'R', 'B', 'N'}
 
+FROM_FIGURINE_TO_ALGEBRAIC = {
+    '\u2654': 'K',
+    '\u2655': 'Q',
+    '\u2656': 'R',
+    '\u2657': 'B',
+    '\u2658': 'N',
+    '\u2659': '',
+
+    '\u265A': 'K',
+    '\u265B': 'Q',
+    '\u265C': 'R',
+    '\u265D': 'B',
+    '\u265E': 'N',
+    '\u265F': ''
+}
+
+
 def other_color(color):
     if color == Color.White:
         return Color.Black
@@ -219,3 +236,9 @@ def to_figurine_notation(move, notation_info):
         out += '#'
 
     return out
+
+def to_algebraic_notation(move, notation_info):
+    algebraic = ''
+    for char in to_figurine_notation(move, notation_info):
+        algebraic += FROM_FIGURINE_TO_ALGEBRAIC.get(char, char)
+    return algebraic
