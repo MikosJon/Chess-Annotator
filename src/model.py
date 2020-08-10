@@ -75,6 +75,13 @@ class Game:
         out += 'a b c d e f g h'
         return out
 
+    def board(self):
+        board = [[None] * 8 for _ in range(8)]
+        for fig in self.in_play:
+            row, col = fig.position
+            board[row-1][col-1] = fig
+        return board
+
     def remove_from_play(self, figure):
         self.in_play.remove(figure)
         self.captured.add(figure)

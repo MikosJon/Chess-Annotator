@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chess-Annotator</title>
+        <link rel="stylesheet" href="static/chessboard.css">
+    </head>
+    <body>
+    % include('chessboard.html', game=game)
+    <form method="POST" action="/make_move">
+        <label for="fmove">Vnesi potezo:</label>
+        <input type="text" id="fmove" name="fmove">
+        <input type="submit" value="Pošlji">
+    </form>
+    </body>
+</html>
