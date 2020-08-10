@@ -154,7 +154,7 @@ class CLI:
                 print('3 zelo dobra poteza ("!!")')
                 print('4 zelo slaba poteza ("??")')
                 print('5 zanimiva poteza ("!?")')
-                print('6 dvomljiva poteza ("?!")')
+                print('6 vprašljiva poteza ("?!")')
 
                 sign = input('-> ')
                 if sign in '123456':
