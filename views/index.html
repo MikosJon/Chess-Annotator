@@ -9,23 +9,26 @@
         <link rel="stylesheet" href="static/style.css">
     </head>
     <body>
+        % from src.definicije import *
+        <div class="container">
         <div class="row">
             <div class="col s8">
             % include('chessboard.html', game=game)
             </div>
+            <div class="col s4">
+            % include('notation.html', game=game)
+            </div>
         </div>
         <div class="row">
-            <div class="col s6">
+            <div class="col s5">
                 <form method="POST" action="/make_move" class="col s12">
                 <div class="row">
                     <div class="input-field col s4">
                         <input type="text" id="fmove" name="fmove">
-                        <label for="fmove">Vnesi potezo</label>
+                        <label for="fmove">Poteza</label>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="input_field col s8">
-                        <label for="fanno">Izberi anotacijo</label>
+                    <div class="input_field col s8 push-s4">
+                        <label for="fanno">Anotacija</label>
                         <select id="fanno" name="fanno">
                             <option value="0">Brez anotacije</option>
                             <option value="1">Dobra poteza (!)</option>
@@ -40,20 +43,24 @@
                 <div class="row">
                     <div class="input-field col s12">
                         <textarea id="ftext" name="ftext" class="materialize-textarea"></textarea>
-                        <label for="ftext" class="">Vnesi mnenje</label>
+                        <label for="ftext" class="">Mnenje</label>
                     </div>
                 </div>
                 <input type="submit" value="Pošlji">
                 </form>
             </div>
         </div>
+        </div>
     <script src="static/materialize.js"></script>
+    <script src="static/fittext.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var elems = document.querySelectorAll('select');
             var options = document.querySelectorAll('option');
             var instances = M.FormSelect.init(elems, options);
         });
+        window.fitText(document.getElementsByClassName('white_square'), 0.125);
+        window.fitText(document.getElementsByClassName('black_square'), 0.125);
     </script>
     </body>
 </html>

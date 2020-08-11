@@ -99,6 +99,16 @@ TO_FEN = {
     (Name.Pawn, Color.Black)   : 'p'
 }
 
+TO_ANNOTATION = {
+    '0': '',
+    '1': '!',
+    '2': '?',
+    '3': '!!',
+    '4': '??',
+    '5': '!?',
+    '6': '?!'
+}
+
 FROM_NOTATION = {
     '\u2654': (Name.King, Color.White),
     '\u2655': (Name.Queen, Color.White),
@@ -188,7 +198,7 @@ def parse_notation(notation):
     elif m := re.fullmatch(R_CASTLING, notation):
         return m
 
-def to_figurine_notation(move, notation_info):
+def to_figurine_notation(move, notation_info, anno_value='0'):
     out = ''
     if move.piece == Name.Pawn:
         if notation_info.captures:
@@ -205,6 +215,7 @@ def to_figurine_notation(move, notation_info):
         if notation_info.mate:
             out += '#'
 
+        out += TO_ANNOTATION.get(anno_value, '')
         return out
     else:
         if move.color == Color.White:
@@ -235,6 +246,7 @@ def to_figurine_notation(move, notation_info):
     if notation_info.mate:
         out += '#'
 
+    out += TO_ANNOTATION.get(anno_value, '')
     return out
 
 def to_algebraic_notation(move, notation_info):

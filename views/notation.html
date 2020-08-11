@@ -1,0 +1,21 @@
+<div class="col s6 orange">
+    <ol>
+% for move, notation_info, anno in game.moves:
+%     fig_notation = to_figurine_notation(move, notation_info, anno)
+%     if move.color == Color.White:
+        <li>{{fig_notation}}</li>
+%     end
+% end
+    </ol>
+</div>
+
+<div class="col s6 blue">
+    <ul>
+% for move, notation_info, anno in game.moves:
+%     fig_notation = to_figurine_notation(move, notation_info, anno)
+%     if move.color == Color.Black:
+        <li>{{fig_notation}}</li>
+%     end
+% end
+    </ul>
+</div>
