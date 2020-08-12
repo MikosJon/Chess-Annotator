@@ -9,48 +9,19 @@
         <link rel="stylesheet" href="static/style.css">
     </head>
     <body>
-        % from src.definicije import *
-        <div class="container">
+    <div class="container">
         <div class="row">
             <div class="col s8">
             % include('chessboard.html', game=game)
             </div>
-            <div class="col s4">
-            % include('notation.html', game=game)
+            <div class="col s4" style="padding-left: 2%;">
+            % include('notation.html', game=game, move_num=move_num, last_col=last_col)
             </div>
         </div>
         <div class="row">
-            <div class="col s5">
-                <form method="POST" action="/make_move" class="col s12">
-                <div class="row">
-                    <div class="input-field col s4">
-                        <input type="text" id="fmove" name="fmove">
-                        <label for="fmove">Poteza</label>
-                    </div>
-                    <div class="input_field col s8 push-s4">
-                        <label for="fanno">Anotacija</label>
-                        <select id="fanno" name="fanno">
-                            <option value="0">Brez anotacije</option>
-                            <option value="1">Dobra poteza (!)</option>
-                            <option value="3">Zelo dobra poteza (!!)</option>
-                            <option value="2">Slaba poteza (?)</option>
-                            <option value="4">Zelo slaba poteza (??)</option>
-                            <option value="5">Zanimiva poteza (!?)</option>
-                            <option value="6">Vprašljiva poteza (?!)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <textarea id="ftext" name="ftext" class="materialize-textarea"></textarea>
-                        <label for="ftext" class="">Mnenje</label>
-                    </div>
-                </div>
-                <input type="submit" value="Pošlji">
-                </form>
-            </div>
+            % include('annotation.html')
         </div>
-        </div>
+    </div>
     <script src="static/materialize.js"></script>
     <script src="static/fittext.js"></script>
     <script>

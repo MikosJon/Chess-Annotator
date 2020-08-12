@@ -1,0 +1,29 @@
+<div class="col s8">
+    <form method="POST" action="/make_move" class="col s12">
+    <div class="row">
+        <div class="input-field col s4">
+            <input type="text" id="fmove" name="fmove">
+            <label for="fmove">Poteza</label>
+        </div>
+        <div class="input_field col s4 push-s4">
+            <label for="fanno">Anotacija</label>
+            <select id="fanno" name="fanno">
+                <option value="0">Brez anotacije</option>
+                <option value="1">Dobra poteza (!)</option>
+                <option value="3">Zelo dobra poteza (!!)</option>
+                <option value="2">Slaba poteza (?)</option>
+                <option value="4">Zelo slaba poteza (??)</option>
+                <option value="5">Zanimiva poteza (!?)</option>
+                <option value="6">Vprašljiva poteza (?!)</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="input-field col s12">
+            <textarea id="ftext" name="ftext" class="materialize-textarea"></textarea>
+            <label for="ftext" class="">Mnenje</label>
+        </div>
+    </div>
+    <input type="submit" value="Pošlji">
+    </form>
+</div>

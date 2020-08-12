@@ -895,11 +895,11 @@ class Game:
         else:
             self.en_passant_position = square_to_pos(en_passant_square)
 
-        self.half_move_number = self.half_move_memo.pop()
+        self.half_move_number = self.half_move_memo[-1]
 
         if last_move.color == Color.Black:
             self.full_move_number -= 1
 
         self.current_color = last_move.color
 
-        return last_move, last_notation_info
+        return last_move, last_notation_info, last_annotation
