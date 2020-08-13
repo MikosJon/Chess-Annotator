@@ -1,10 +1,10 @@
 % from src.definicije import *
 <h5 class="center-align">Odigrane poteze</h5>
 
-<div class="row" style="border: 2px solid; overflow-y: scroll;">
+<div class="row" style="border: 2px solid; font-size: 120%;">
     <div class="col s6" style="border-right: 1px solid;">
         <ol>
-            % for idx, (move, notation_info, anno) in enumerate(game.moves):
+            % for idx, (move, notation_info, anno) in enumerate(moves):
             %     fig_notation = to_figurine_notation(move, notation_info, anno)
             %     if move.color == Color.White:
             %         if last_col == Color.White and idx // 2 + 1 == move_num:
@@ -19,7 +19,7 @@
 
     <div class="col s6" style="background-color: bisque; padding-left: 2.5rem;">
         <ul>
-            % for idx, (move, notation_info, anno) in enumerate(game.moves):
+            % for idx, (move, notation_info, anno) in enumerate(moves):
             %     fig_notation = to_figurine_notation(move, notation_info, anno)
             %     if move.color == Color.Black:
             %         if last_col == Color.Black and idx // 2 + 1 == move_num:
@@ -29,7 +29,7 @@
             %         end
             %     end
             % end
-            % if game.current_color == Color.Black:
+            % if moves and moves[-1][0].color == Color.White:
             <li>&nbsp</li>
             % end
         </ul>
@@ -38,14 +38,32 @@
 <div class="row center-align" >
     <form method="POST" class="col s12">
         <div class="row">
-            <input type="submit" formaction="/remove_from_now" value="Odstrani od trenutne poteze">
+            % if len(moves) == 0:
+                <input type="submit" formaction="/remove_from_now" value="Odstrani od trenutne poteze" disabled>
+            % else:
+                <input type="submit" formaction="/remove_from_now" value="Odstrani od trenutne poteze">
+            % end
         </div>
         <div class="row">
             <!-- TODO: disable at the proper time -->
+            % if move_num == 0:
+                <input type="submit" formaction="/to_first" value="&lt;&lt;" disabled>
+                <input type="submit" formaction="/previous_move" value="&lt;" disabled>
+            % else:
             <input type="submit" formaction="/to_first" value="&lt;&lt;">
-            <input type="submit" formaction="/previous_move" value="&lt;">
-            <input type="submit" formaction="/next_move" value="&gt;">
-            <input type="submit" formaction="/to_last" value="&gt;&gt;">
+                <input type="submit" formaction="/previous_move" value="&lt;">
+            % end
+            % pos = 2 * move_num
+            % if last_col == Color.White:
+            %     pos -= 1
+            % end
+            % if pos == len(moves):
+                <input type="submit" formaction="/next_move" value="&gt;" disabled>
+                <input type="submit" formaction="/to_last" value="&gt;&gt;" disabled>
+            % else:
+                <input type="submit" formaction="/next_move" value="&gt;">
+                <input type="submit" formaction="/to_last" value="&gt;&gt;">
+            % end
         </div>
     </form>
 </div>

@@ -44,7 +44,7 @@ def write_to_current(anno, text):
 
 @bottle.get('/')
 def main():
-    return bottle.template('index.html', game=game, move_num=current_move_number, last_col=last_played)
+    return bottle.template('index.html', game=game, moves=moves, move_num=current_move_number, last_col=last_played)
 
 @bottle.get('/static/<filename>')
 def static_file(filename):
@@ -52,7 +52,7 @@ def static_file(filename):
 
 @bottle.post('/make_move')
 def make_move():
-    global current_move_number, last_played
+    global last_played, current_move_number
     notation = bottle.request.forms.fmove
     anno_value = bottle.request.forms.fanno
     text = bottle.request.forms.ftext
@@ -60,13 +60,13 @@ def make_move():
         game.make_move_from_notation(notation, anno_value)
     except ValueError as err:
         pass
-
-    moves.append(game.moves[-1])
-    current_move_number = game.full_move_number
-    if game.current_color == Color.White:
-        current_move_number -= 1
-    last_played = game.last_move.color
-    write_to_current(anno_value, text)
+    else:
+        moves.append(game.moves[-1])
+        current_move_number = game.full_move_number
+        if game.current_color == Color.White:
+            current_move_number -= 1
+        last_played = game.last_move.color
+        write_to_current(anno_value, text)
     bottle.redirect('/')
 
 @bottle.post('/to_first')
@@ -88,7 +88,7 @@ def previous_move():
 
 @bottle.post('/next_move')
 def next_move():
-    global last_played, current_move_number, game, moves
+    global last_played, current_move_number
     idx = 2 * current_move_number
     if last_played == Color.White:
         idx -= 1
@@ -102,12 +102,22 @@ def next_move():
 @bottle.post('/to_last')
 def to_last():
     global last_played, current_move_number
+    idx = 2 * current_move_number
+    if last_played == Color.White:
+        idx -= 1
+    for move, notation_info, annotation in moves[idx:]:
+        game.make_move(move, annotation)
     last_played = game.last_move.color
-    current_move_number = game.full_move_number
+    current_move_number = game.full_move_number - 1
     bottle.redirect('/')
 
 @bottle.post('/remove_from_now')
 def remove_from_now():
+    global moves
+    idx = 2 * current_move_number
+    if last_played == Color.White:
+        idx -= 1
+    moves = moves[:idx]
     bottle.redirect('/')
 
 bottle.run(debug=True, reloader=True)
