@@ -1,29 +1,96 @@
-<div class="col s8">
+% last_col = args['last_col']
+% moves = args['moves']
+% move_num = args['move_num']
+% game = args['game']
+%
+% idx = 2 * move_num
+% if last_col == Color.White:
+%     idx -= 1
+% end
+% if idx == len(moves):
     <form method="POST" action="/make_move" class="col s12">
-    <div class="row">
-        <div class="input-field col s4">
+% else:
+    <form method="POST" action="/update_move" class="col s12">
+% end
+<div class="row">
+    <div class="input-field col s4">
+        % if idx == len(moves):
             <input type="text" id="fmove" name="fmove">
-            <label for="fmove">Poteza</label>
-        </div>
-        <div class="input_field col s4 push-s4">
-            <label for="fanno">Anotacija</label>
-            <select id="fanno" name="fanno">
+        % else:
+        %    move, notation_info, _, _ = moves[idx]
+        %    notation = to_algebraic_notation(move, notation_info)
+            <input type="text" id="fmove" name="fmove" value={{notation}} disabled>
+        % end
+        <label for="fmove">Poteza</label>
+    </div>
+    <div class="input_field col s4 push-s4">
+        <label for="fanno">Anotacija</label>
+        <select id="fanno" name="fanno">
+            % if idx == len(moves):
+            %     anno = ''
+            % else:
+            %    anno = moves[idx][2]
+            % end
+            % if anno == '0':
+                <option value="0" selected>Brez anotacije</option>
+            % else:
                 <option value="0">Brez anotacije</option>
+            % end
+            % if anno == '1':
+                <option value="1" selected>Dobra poteza (!)</option>
+            % else:
                 <option value="1">Dobra poteza (!)</option>
+            % end
+            % if anno == '3':
+                <option value="3" selected>Zelo dobra poteza (!!)</option>
+            % else:
                 <option value="3">Zelo dobra poteza (!!)</option>
+            % end
+            % if anno == '2':
+                <option value="2" selected>Slaba poteza (?)</option>
+            % else:
                 <option value="2">Slaba poteza (?)</option>
+            % end
+            % if anno == '4':
+                <option value="4" selected>Zelo slaba poteza (??)</option>
+            % else:
                 <option value="4">Zelo slaba poteza (??)</option>
+            % end
+            % if anno == '5':
+                <option value="5" selected>Zanimiva poteza (!?)</option>
+            % else:
                 <option value="5">Zanimiva poteza (!?)</option>
+            % end
+            % if anno == '6':
+                <option value="6" selected>Vprašljiva poteza (?!)</option>
+            % else:
                 <option value="6">Vprašljiva poteza (?!)</option>
-            </select>
-        </div>
+            % end
+        </select>
     </div>
-    <div class="row">
-        <div class="input-field col s12">
-            <textarea id="ftext" name="ftext" class="materialize-textarea"></textarea>
-            <label for="ftext" class="">Mnenje</label>
-        </div>
-    </div>
-    <input type="submit" value="Pošlji">
-    </form>
 </div>
+<div class="row">
+    <div class="input-field col s12">
+        % if idx == len(moves):
+        %     text = ''
+        % else:
+        %     text = moves[idx][-1]
+        % end
+        <textarea id="ftext" name="ftext" class="materialize-textarea">{{text}}</textarea>
+        <label for="ftext" class="">Mnenje</label>
+    </div>
+</div>
+<div class="row">
+    <div class="col s6">
+    % if idx == len(moves):
+        <input type="submit" value="Pošlji">
+    % else:
+        <input type="submit" value="Posodobi">
+    % end
+    </div>
+    <div class="col s6">
+        <input type="submit" formaction="/export_pgn" value="Izvozi PGN">
+        <input type="submit" formaction="/save_pgn" value="Shrani PGN" disabled>
+    </div>
+</div>
+</form>

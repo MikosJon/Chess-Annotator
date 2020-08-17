@@ -8,43 +8,30 @@ game = Game()
 moves = []
 current_move_number = 0
 last_played = Color.Black
+game_end = None
 
 for filename in os.listdir():
     if filename.endswith('PGN'):
         break
 else:
     os.mkdir('PGN')
-    os.mkdir('PGN/saved')
+    # os.mkdir('PGN/saved')
 
 try:
     os.remove('PGN/current.pgn')
 except:
     pass
 
-def write_to_current(anno, text):
-    with open('PGN/current.pgn', 'a') as f:
-        alg_notation = to_algebraic_notation(game.last_move, game.last_notation_info)
-        if game.current_color == Color.Black:
-            if game.full_move_number != 1:
-                f.write(f' {game.full_move_number}.')
-            else:
-                f.write(f'{game.full_move_number}.')
-        f.write(f' {alg_notation}')
-        if anno != '0':
-            f.write(f'${anno}')
-        if text:
-            f.write(f' {{{text}}}')
-
-        if game.game_state == GameState.Draw:
-            f.write(' 1/2-1/2')
-        elif game.game_state == GameState.White:
-            f.write(' 1-0')
-        elif game.game_state == GameState.Black:
-            f.write(' 0-1')
+def get_next_move_idx():
+    idx = 2 * current_move_number
+    if last_played == Color.White:
+        idx -= 1
+    return idx
 
 @bottle.get('/')
 def main():
-    return bottle.template('index.html', game=game, moves=moves, move_num=current_move_number, last_col=last_played)
+    args = {'game': game, 'moves': moves, 'move_num': current_move_number, 'last_col': last_played}
+    return bottle.template('index.html', args=args)
 
 @bottle.get('/static/<filename>')
 def static_file(filename):
@@ -52,21 +39,42 @@ def static_file(filename):
 
 @bottle.post('/make_move')
 def make_move():
-    global last_played, current_move_number
+    global last_played, current_move_number, game_end
     notation = bottle.request.forms.fmove
-    anno_value = bottle.request.forms.fanno
+    annotation = bottle.request.forms.fanno
     text = bottle.request.forms.ftext
     try:
-        game.make_move_from_notation(notation, anno_value)
+        game.make_move_from_notation(notation)
     except ValueError as err:
         pass
     else:
-        moves.append(game.moves[-1])
+        moves.append((*game.moves[-1], annotation, text))
         current_move_number = game.full_move_number
         if game.current_color == Color.White:
             current_move_number -= 1
         last_played = game.last_move.color
-        write_to_current(anno_value, text)
+        # write_to_current(anno_value, text) TODO: export PGN button, save button
+        if game.game_state != GameState.Normal:
+            game_end = game.game_state
+    bottle.redirect('/')
+
+@bottle.post('/update_move')
+def update_move():
+    global current_move_number, last_played
+    anno = bottle.request.forms.fanno
+    text = bottle.request.forms.ftext
+
+    idx = get_next_move_idx()
+    move = moves[idx]
+    updated_move = (move[0], move[1], anno, text)
+    moves[idx] = updated_move
+
+    game.make_move(move[0])
+    current_move_number = game.full_move_number
+    if game.current_color == Color.White:
+        current_move_number -= 1
+    last_played = game.last_move.color
+
     bottle.redirect('/')
 
 @bottle.post('/to_first')
@@ -89,11 +97,8 @@ def previous_move():
 @bottle.post('/next_move')
 def next_move():
     global last_played, current_move_number
-    idx = 2 * current_move_number
-    if last_played == Color.White:
-        idx -= 1
-    next_move = moves[idx]
-    game.make_move(next_move[0], next_move[2])
+    next_move = moves[get_next_move_idx()]
+    game.make_move(next_move[0])
     if last_played == Color.Black:
         current_move_number += 1
     last_played = other_color(last_played)
@@ -102,22 +107,44 @@ def next_move():
 @bottle.post('/to_last')
 def to_last():
     global last_played, current_move_number
-    idx = 2 * current_move_number
-    if last_played == Color.White:
-        idx -= 1
-    for move, notation_info, annotation in moves[idx:]:
-        game.make_move(move, annotation)
+    for move, _, _, _ in moves[get_next_move_idx():]:
+        game.make_move(move)
     last_played = game.last_move.color
-    current_move_number = game.full_move_number - 1
+    if last_played == Color.Black:
+        current_move_number = game.full_move_number - 1
+    else:
+        current_move_number = game.full_move_number
     bottle.redirect('/')
 
 @bottle.post('/remove_from_now')
 def remove_from_now():
     global moves
-    idx = 2 * current_move_number
-    if last_played == Color.White:
-        idx -= 1
-    moves = moves[:idx]
+    moves = moves[:get_next_move_idx()]
     bottle.redirect('/')
+
+@bottle.post('/export_pgn')
+def export_pgn():
+    with open('PGN/current.pgn', 'w') as f:
+        for idx, (move, notation_info, anno, text) in enumerate(moves):
+            alg_notation = to_algebraic_notation(move, notation_info)
+            if idx == 0:
+                f.write('1.')
+            else:
+                f.write(' ' + str(idx + 1) + '.')
+            f.write(f' {alg_notation}')
+            if anno != '0':
+                f.write(f'${anno}')
+            if text:
+                f.write(f' {{{text}}}')
+
+        if game_end == GameState.Draw:
+            f.write(' 1/2-1/2')
+        elif game_end == GameState.White:
+            f.write(' 1-0')
+        elif game_end == GameState.Black:
+            f.write(' 0-1')
+        else:
+            f.write(' *')
+    return bottle.static_file('current.pgn', root='PGN', download=True)
 
 bottle.run(debug=True, reloader=True)

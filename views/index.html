@@ -10,16 +10,19 @@
     </head>
     <body>
     <div class="container">
-        <div class="row">
+        % from src.definicije import *
+        <div class="row" style="max-height: initial;">
             <div class="col s8">
-            % include('chessboard.html', game=game)
+            % include('chessboard.html', args=args)
             </div>
             <div class="col s4" style="padding-left: 2%;">
-            % include('notation.html', moves=moves, move_num=move_num, last_col=last_col)
+            % include('notation.html', args=args)
             </div>
         </div>
         <div class="row">
-            % include('annotation.html')
+            <div class="col s8">
+            % include('annotation.html', args=args)
+            </div>
         </div>
     </div>
     <script src="static/materialize.js"></script>

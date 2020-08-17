@@ -198,7 +198,7 @@ def parse_notation(notation):
     elif m := re.fullmatch(R_CASTLING, notation):
         return m
 
-def to_figurine_notation(move, notation_info, anno_value='0'):
+def to_figurine_notation(move, notation_info, *, anno='0'):
     out = ''
     if move.piece == Name.Pawn:
         if notation_info.captures:
@@ -215,7 +215,7 @@ def to_figurine_notation(move, notation_info, anno_value='0'):
         if notation_info.mate:
             out += '#'
 
-        out += TO_ANNOTATION.get(anno_value, '')
+        out += TO_ANNOTATION.get(anno, '')
         return out
     else:
         if move.color == Color.White:
@@ -246,11 +246,11 @@ def to_figurine_notation(move, notation_info, anno_value='0'):
     if notation_info.mate:
         out += '#'
 
-    out += TO_ANNOTATION.get(anno_value, '')
+    out += TO_ANNOTATION.get(anno, '')
     return out
 
-def to_algebraic_notation(move, notation_info):
+def to_algebraic_notation(move, notation_info, *, anno='0'):
     algebraic = ''
-    for char in to_figurine_notation(move, notation_info):
+    for char in to_figurine_notation(move, notation_info, anno=anno):
         algebraic += FROM_FIGURINE_TO_ALGEBRAIC.get(char, char)
     return algebraic

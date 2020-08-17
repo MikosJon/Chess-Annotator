@@ -64,10 +64,6 @@ class Game:
     def last_notation_info(self):
         return self.moves[-1][1]
 
-    @property
-    def last_annotation(self):
-        return self.moves[-1][2]
-
     def printable_state(self):
         out = ''
         board = [['·'] * 8 for _ in range(8)]
@@ -677,7 +673,7 @@ class Game:
             rook.position = rook_starting
         return moves
 
-    def make_move_from_notation(self, notation, anno='0'):
+    def make_move_from_notation(self, notation):
         if self.game_state != GameState.Normal:
             raise ValueError('Game is already over')
 
@@ -704,7 +700,7 @@ class Game:
             notation_info = self.get_info(king, target)
 
             king.position = target
-            self.moves.append((move, notation_info, anno))
+            self.moves.append((move, notation_info))
 
             if king.color == Color.White:
                 self.white_long_castle = False
@@ -760,7 +756,7 @@ class Game:
         notation_info = self.get_info(figure, target, promo_piece=promo_piece)
 
         self.move_figure_to(figure, target, promo_piece=promo_piece)
-        self.moves.append((move, notation_info, anno))
+        self.moves.append((move, notation_info))
 
         if figure.name == Name.King:
             if figure.color == Color.White:
@@ -784,7 +780,7 @@ class Game:
 
         self.update_game_state()
 
-    def make_move(self, move, anno='0'):
+    def make_move(self, move):
         if self.game_state != GameState.Normal:
             raise ValueError('Game is already over')
 
@@ -797,7 +793,7 @@ class Game:
             raise ValueError('Illegal move')
 
         notation_info = self.get_info(figure, move.target, promo_piece=move.promo_piece)
-        self.moves.append((move, notation_info, anno))
+        self.moves.append((move, notation_info))
 
         if move.castling:
             if move.color == Color.White:
@@ -845,7 +841,7 @@ class Game:
         if len(self.moves) == 0:
             raise ValueError('No moves to undo')
 
-        last_move, last_notation_info, last_annotation = self.moves.pop()
+        last_move, last_notation_info = self.moves.pop()
 
         if self.game_state != GameState.Normal:
             self.game_state = GameState.Normal
@@ -902,4 +898,4 @@ class Game:
 
         self.current_color = last_move.color
 
-        return last_move, last_notation_info, last_annotation
+        return last_move, last_notation_info

@@ -1,11 +1,13 @@
-% from src.definicije import *
+% moves = args['moves']
+% last_col = args['last_col']
+% move_num = args['move_num']
 <h5 class="center-align">Odigrane poteze</h5>
 
 <div class="row" style="border: 2px solid; font-size: 120%;">
     <div class="col s6" style="border-right: 1px solid;">
         <ol>
-            % for idx, (move, notation_info, anno) in enumerate(moves):
-            %     fig_notation = to_figurine_notation(move, notation_info, anno)
+            % for idx, (move, notation_info, anno, text) in enumerate(moves):
+            %     fig_notation = to_figurine_notation(move, notation_info, anno=anno)
             %     if move.color == Color.White:
             %         if last_col == Color.White and idx // 2 + 1 == move_num:
             <li style="background-color: yellow;">{{fig_notation}}</li>
@@ -19,8 +21,8 @@
 
     <div class="col s6" style="background-color: bisque; padding-left: 2.5rem;">
         <ul>
-            % for idx, (move, notation_info, anno) in enumerate(moves):
-            %     fig_notation = to_figurine_notation(move, notation_info, anno)
+            % for idx, (move, notation_info, anno, text) in enumerate(moves):
+            %     fig_notation = to_figurine_notation(move, notation_info, anno=anno)
             %     if move.color == Color.Black:
             %         if last_col == Color.Black and idx // 2 + 1 == move_num:
             <li style="background-color: yellow;">{{fig_notation}}</li>
@@ -45,7 +47,6 @@
             % end
         </div>
         <div class="row">
-            <!-- TODO: disable at the proper time -->
             % if move_num == 0:
                 <input type="submit" formaction="/to_first" value="&lt;&lt;" disabled>
                 <input type="submit" formaction="/previous_move" value="&lt;" disabled>
