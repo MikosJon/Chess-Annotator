@@ -1,0 +1,64 @@
+% rebase('base.html')
+
+<div class="section">
+<div class="row">
+    <h4>Prijava</h4>
+</div>
+<div class="row">
+    <form method="POST" action="/login" class="col s12">
+        <div class="row">
+        <div class="input-field col s6 offset-s2">
+            <input type="text" id="flogin_username" name="flogin_username">
+            <label for="flogin_username">Uporabniško ime</label>
+        </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s6 offset-s2">
+                <input type="password" id="fpassword" name="fpassword">
+                <label for="fpassword">Geslo</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s6 offset-s2">
+                <input type="submit" value="Prijavi me!">
+            </div>
+        </div>
+    </form>
+</div>
+</div>
+
+<div class="divider">
+</div>
+
+<div class="section">
+<div class="row">
+    <h4>Registracija</h4>
+</div>
+<div class="row">
+    <form method="POST" action="/register" class="col s12">
+        <div class="row">
+        <div class="input-field col s6 offset-s2">
+            <input type="text" id="fregister_username" name="fregister_username">
+            <label for="fregister_username">Uporabniško ime</label>
+        </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s6 offset-s2">
+                <input type="password" id="fpassword1" name="fpassword1">
+                <label for="fpassword1">Geslo</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s6 offset-s2">
+                <input type="password" id="fpassword2" name="fpassword2">
+                <label for="fpassword2">Potrdi geslo</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s6 offset-s2">
+                <input type="submit" value="Registriraj me!">
+            </div>
+        </div>
+    </form>
+</div>
+</div>

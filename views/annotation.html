@@ -1,10 +1,10 @@
-% last_col = args['last_col']
+% last_color = args['last_color']
 % moves = args['moves']
 % move_num = args['move_num']
 % game = args['game']
 %
 % idx = 2 * move_num
-% if last_col == Color.White:
+% if last_color == Color.White:
 %     idx -= 1
 % end
 % if idx == len(moves):
@@ -23,7 +23,7 @@
         % end
         <label for="fmove">Poteza</label>
     </div>
-    <div class="input_field col s4 push-s4">
+    <div class="input_field col s5 push-s3">
         <label for="fanno">Anotacija</label>
         <select id="fanno" name="fanno">
             % if idx == len(moves):

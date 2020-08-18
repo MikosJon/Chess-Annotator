@@ -1,40 +1,16 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Chess-Annotator</title>
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link type="text/css" rel="stylesheet" href="static/materialize.css"  media="screen,projection">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <link rel="stylesheet" href="static/chessboard.css">
-        <link rel="stylesheet" href="static/style.css">
-    </head>
-    <body>
-    <div class="container">
-        % from src.definicije import *
-        <div class="row" style="max-height: initial;">
-            <div class="col s8">
-            % include('chessboard.html', args=args)
-            </div>
-            <div class="col s4" style="padding-left: 2%;">
-            % include('notation.html', args=args)
-            </div>
-        </div>
-        <div class="row">
-            <div class="col s8">
-            % include('annotation.html', args=args)
-            </div>
-        </div>
+% rebase('base.html')
+
+% from src.definicije import *
+<div class="row" style="max-height: initial;">
+    <div class="col s8">
+    % include('chessboard.html', args=args)
     </div>
-    <script src="static/materialize.js"></script>
-    <script src="static/fittext.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var elems = document.querySelectorAll('select');
-            var options = document.querySelectorAll('option');
-            var instances = M.FormSelect.init(elems, options);
-        });
-        window.fitText(document.getElementsByClassName('white_square'), 0.125);
-        window.fitText(document.getElementsByClassName('black_square'), 0.125);
-    </script>
-    </body>
-</html>
+    <div class="col s4" style="padding-left: 2%;">
+    % include('notation.html', args=args)
+    </div>
+</div>
+<div class="row">
+    <div class="col s8">
+    % include('annotation.html', args=args)
+    </div>
+</div>
