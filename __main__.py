@@ -21,10 +21,9 @@ class User:
         self.game_end = None
 
     def store_login_info(self):
-        with open(os.path.join(USERS_DIR, self.username, 'login_info'), 'w', encoding='utf-8') as f:
-            f.write(self.username + '\n')
-            f.write(str(self.key) + '\n')
-            f.write(str(self.salt))
+        with open(os.path.join(USERS_DIR, self.username, 'login_info'), 'ab') as f:
+            f.write(self.key)
+            f.write(self.salt)
 
     def next_move_idx(self):
         idx = 2 * self.current_move_number
@@ -36,15 +35,17 @@ USERS_DIR = 'Users'
 USERS = {}
 SECRET = 'DO YOU WISH FOR A NEW WORLD?'
 
+KEY_SIZE = 128
+SALT_SIZE = 32
+
 if not os.path.isdir(USERS_DIR):
     os.mkdir(USERS_DIR)
 
 for user_dir in os.listdir(USERS_DIR):
-    print(os.path.join(USERS_DIR, user_dir, 'login_info'))
-    with open(os.path.join(USERS_DIR, user_dir, 'login_info'), 'r', encoding='utf-8') as f:
-        username = f.readline().strip('\n')
-        key = bytes(f.readline().strip('\n'), encoding='utf-8')
-        salt = bytes(f.readline().strip('\n'), encoding='utf-8')
+    with open(os.path.join(USERS_DIR, user_dir, 'login_info'), 'rb') as f:
+        username = user_dir
+        key = f.read(KEY_SIZE)
+        salt = f.read(SALT_SIZE)
         USERS[username] = User(username, key, salt)
 
 def get_current_user():
@@ -78,7 +79,7 @@ def login():
         password.encode('utf-8'),
         user.salt,
         100000,
-        dklen=128
+        dklen=KEY_SIZE
     )
     if key != user.key:
         bottle.redirect('/login')
@@ -97,13 +98,13 @@ def register():
 
     if password1 != password2:
         bottle.redirect('/login')
-    salt = os.urandom(32)
+    salt = os.urandom(SALT_SIZE)
     key = hashlib.pbkdf2_hmac(
         'sha256',
         password1.encode('utf-8'),
         salt,
         100000,
-        dklen=128
+        dklen=KEY_SIZE
     )
     os.mkdir(os.path.join(USERS_DIR, username))
     user = User(username, key, salt)
@@ -111,6 +112,11 @@ def register():
     user.store_login_info()
     bottle.response.set_cookie('username', user.username, path='/', secret=SECRET)
     bottle.redirect('/')
+
+@bottle.get('/logout')
+def logout():
+    bottle.response.delete_cookie('username', path='/')
+    bottle.redirect('/login')
 
 @bottle.get('/analysis')
 def analysis():
@@ -120,7 +126,8 @@ def analysis():
     args['moves'] = user.moves
     args['move_num'] = user.current_move_number
     args['last_color'] = user.last_played
-    return bottle.template('index.html', args=args)
+    args['username'] = user.username
+    return bottle.template('analysis.html', args=args, login=False)
 
 @bottle.post('/make_move')
 def make_move():

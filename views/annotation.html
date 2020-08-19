@@ -15,7 +15,7 @@
 <div class="row">
     <div class="input-field col s4">
         % if idx == len(moves):
-            <input type="text" id="fmove" name="fmove">
+            <input type="text" id="fmove" name="fmove" required>
         % else:
         %    move, notation_info, _, _ = moves[idx]
         %    notation = to_algebraic_notation(move, notation_info)
@@ -83,14 +83,14 @@
 <div class="row">
     <div class="col s6">
     % if idx == len(moves):
-        <input type="submit" value="Pošlji">
+        <input type="submit" class="btn" value="Pošlji">
     % else:
-        <input type="submit" value="Posodobi">
+        <input type="submit" class="btn" value="Posodobi">
     % end
     </div>
     <div class="col s6">
-        <input type="submit" formaction="/export_pgn" value="Izvozi PGN">
-        <input type="submit" formaction="/save_pgn" value="Shrani PGN" disabled>
+        <input type="submit" class="btn" formaction="/export_pgn" value="Izvozi PGN">
+        <input type="submit" class="btn" formaction="/save_pgn" value="Shrani PGN" disabled>
     </div>
 </div>
 </form>
