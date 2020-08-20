@@ -1,0 +1,99 @@
+<div class="col s3 offset-s7">
+<button data-target="save" class="btn modal-trigger">Shrani poteze</button>
+</div>
+<div class="col s2">
+<button data-target="export" class="btn modal-trigger">Izvozi PGN</button>
+</div>
+
+<div id="save" class="modal">
+    <div class="modal-content">
+        <h4>Shrani poteze</h4>
+        <form class="col s12" method="POST" action="/save_moves">
+            <div class="row">
+                <div class="input-field col s12">
+                    <select id="result" name="result">
+                        <option value="*" {{'selected' if result is None else ''}} >Neznan</option>
+                        <option value="1-0" {{'selected' if result == GameState.White else ''}}>Beli zmaga</option>
+                        <option value="1/2-1/2" {{'selected' if result == GameState.Draw else ''}}>Neodločen</option>
+                        <option value="0-1" {{'selected' if result == GameState.Black else ''}}>Črni zmaga</option>
+                    </select>
+                    <label for="result">Rezultat</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s10">
+                    <button class="btn" type="submit">Shrani poteze</button>
+                </div>
+                <div class="col s2">
+                    <button class="btn modal-close" type="button">Zapri</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div id="export" class="modal">
+    <div class="modal-content">
+        <h4>Izvozi PGN</h4>
+        <form class="col s12" method="POST" action="/export_pgn">
+            <div class="row">
+            <div class="input-field col s12">
+                <select id="result" name="result">
+                    <option value="*" {{'selected' if result is None else ''}} >Neznan</option>
+                    <option value="1-0" {{'selected' if result == GameState.White else ''}}>Beli zmaga</option>
+                    <option value="1/2-1/2" {{'selected' if result == GameState.Draw else ''}}>Neodločen</option>
+                    <option value="0-1" {{'selected' if result == GameState.Black else ''}}>Črni zmaga</option>
+                </select>
+                <label for="result">Rezultat</label>
+            </div>
+            <div class="input-field col s12">
+                <input id="event" name="event" type="text" required>
+                <label for="event">Dogodek</label>
+            </div>
+            <div class="input-field col s4">
+                <input id="city" name="city" type="text" required>
+                <label for="city">Mesto</label>
+            </div>
+            <div class="input-field col s4">
+                <input id="region" name="region" type="text" required>
+                <label for="region">Regija</label>
+            </div>
+            <div class="input-field col s4">
+                <input id="country" name="country" type="text" class="autocomplete" required>
+                <label for="country">Država</label>
+            </div>
+            <div class="input-field col s12">
+                <input id="date" name="date" type="text" class="datepicker" required>
+                <label for="date">Datum</label>
+            </div>
+            <div class="input-field col s12">
+                <input id="event_round" name="event_round" type="text" required>
+                <label for="event_round">Runda</label>
+            </div>
+            <div class="input-field col s6">
+                <input id="white_name" name="white_name" type="text" placeholder="Ime" required>
+                <label for="white_name">Beli</label>
+            </div>
+            <div class="input-field col s6">
+                <input id="white_surname" name="white_surname" type="text" placeholder="Priimek" required>
+            </div>
+            <div class="input-field col s6">
+                <input id="black_name" name="black_name" type="text" placeholder="Ime" required>
+                <label for="black_name">Črni</label>
+            </div>
+            <div class="input-field col s6">
+                <input id="black_surname" name="black_surname" type="text" placeholder="Priimek" required>
+            </div>
+            </div>
+            <div class="row">
+                <div class="col s10">
+                    <button class="btn" type="submit">Izvozi PGN</button>
+                </div>
+                <div class="col s2">
+                    <button class="btn modal-close" type="button">Zapri</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

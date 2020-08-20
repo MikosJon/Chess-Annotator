@@ -1,9 +1,9 @@
-% moves = args['moves']
-% last_color = args['last_color']
-% move_num = args['move_num']
+% moves = user.moves
+% last_color = user.last_played
+% move_num = user.current_move_number
 <h5 class="center-align">Odigrane poteze</h5>
 
-<div class="row" style="border: 2px solid;">
+<div class="row" id="notation-box">
     <div class="col s6" style="border-right: 1px solid;">
         <ol>
             % for idx, (move, notation_info, anno, text) in enumerate(moves):
@@ -37,7 +37,7 @@
         </ul>
     </div>
 </div>
-<div class="row center-align" >
+<div class="center" >
     <form method="POST" class="col s12">
         <div class="row">
             % if len(moves) == 0:

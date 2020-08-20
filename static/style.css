@@ -1,0 +1,9 @@
+#notation-box {
+    border: 2px solid;
+    overflow-y: scroll;
+    max-height: max(30vw, 30vh);
+}
+
+#save {
+    overflow: visible;
+}

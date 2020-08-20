@@ -1,31 +1,33 @@
-% last_color = args['last_color']
-% moves = args['moves']
-% move_num = args['move_num']
-% game = args['game']
+% last_color = user.last_played
+% moves = user.moves
+% move_num = user.current_move_number
+% game = user.game
+% username = user.username
 %
 % idx = 2 * move_num
 % if last_color == Color.White:
 %     idx -= 1
 % end
 % if idx == len(moves):
-    <form method="POST" action="/make_move" class="col s12">
+<form method="POST" action="/make_move" class="col s12">
 % else:
-    <form method="POST" action="/update_move" class="col s12">
+<form method="POST" action="/update_move" class="col s12">
 % end
 <div class="row">
     <div class="input-field col s4">
         % if idx == len(moves):
-            <input type="text" id="fmove" name="fmove" required>
+            <input type="text" id="move" name="move" required>
+            <label for="move">Poteza</label>
         % else:
         %    move, notation_info, _, _ = moves[idx]
         %    notation = to_algebraic_notation(move, notation_info)
-            <input type="text" id="fmove" name="fmove" value={{notation}} disabled>
+            <input type="text" id="move" name="move" value={{notation}} disabled>
+            <label for="move" class="active">Poteza</label>
         % end
-        <label for="fmove">Poteza</label>
     </div>
     <div class="input_field col s5 push-s3">
-        <label for="fanno">Anotacija</label>
-        <select id="fanno" name="fanno">
+        <label for="anno">Anotacija</label>
+        <select id="anno" name="anno">
             % if idx == len(moves):
             %     anno = ''
             % else:
@@ -76,21 +78,17 @@
         % else:
         %     text = moves[idx][-1]
         % end
-        <textarea id="ftext" name="ftext" class="materialize-textarea">{{text}}</textarea>
-        <label for="ftext" class="">Mnenje</label>
+        <textarea id="text" name="text" class="materialize-textarea">{{text}}</textarea>
+        <label for="text" class="">Mnenje</label>
     </div>
 </div>
 <div class="row">
-    <div class="col s6">
+    <div class="col s12">
     % if idx == len(moves):
         <input type="submit" class="btn" value="Pošlji">
     % else:
         <input type="submit" class="btn" value="Posodobi">
     % end
-    </div>
-    <div class="col s6">
-        <input type="submit" class="btn" formaction="/export_pgn" value="Izvozi PGN">
-        <input type="submit" class="btn" formaction="/save_pgn" value="Shrani PGN" disabled>
     </div>
 </div>
 </form>
