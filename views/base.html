@@ -5,19 +5,30 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <link type="text/css" rel="stylesheet" href="/static/materialize.css"  media="screen,projection">
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <link rel="stylesheet" href="/static/chessboard.css">
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
-
     <div class="container">
     <nav>
         <div class="nav-wrapper">
             <a href="#" class="brand-logo center">Chess-Annotator</a>
             % if not login:
             <ul class="left">
-                <li><a href="#"><i class="material-icons left">account_circle</i>{{user.username}}</a></li>
-                <li class="active"><a href="/analysis">Analiza</a></li>
+                % if tab == 'user':
+                <li class="active">
+                % else:
+                <li>
+                % end
+                    <a href="/user"><i class="material-icons left">account_circle</i>{{user.username}}</a>
+                </li>
+
+                % if tab == 'analysis':
+                <li class="active">
+                % else:
+                <li>
+                % end
+                    <a href="/analysis">Analiza</a>
+                </li>
             </ul>
             <ul class="right">
                 <li><a href="/logout">Odjavi me!</a></li>
@@ -31,252 +42,7 @@
         {{!base}}
     </div>
     </div>
-    <!-- <script src="static/jquery-3.5.1.js"></script> -->
     <script src="static/materialize.js"></script>
     <script src="static/fittext.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            M.updateTextFields();
-
-            var box = document.getElementById('notation-box');
-            box.scrollTop = box.scrollHeight;
-
-            var selects = document.querySelectorAll('select');
-            var instances = M.FormSelect.init(selects);
-
-            var modals = document.querySelectorAll('.modal');
-            var instances = M.Modal.init(modals);
-
-            var elems = document.querySelectorAll('.datepicker');
-            var instances = M.Datepicker.init(
-                elems,
-                {format: 'yyyy.mm.dd', container: document.body, yearRange: [1800, (new Date()).getFullYear()]}
-            );
-        });
-        let countries = {
-            'Afganistan': null,
-            'Albanija': null,
-            'Alžirija': null,
-            'Andora': null,
-            'Angola': null,
-            'Antigva in Barbuda': null,
-            'Argentina': null,
-            'Armenija': null,
-            'Aruba': null,
-            'Ameriška Samoa': null,
-            'Avstralija': null,
-            'Avstrija': null,
-            'Azerbajdžan': null,
-            'Bahami': null,
-            'Bangladeš': null,
-            'Barbados': null,
-            'Burundi': null,
-            'Belgija': null,
-            'Benin': null,
-            'Bermuda': null,
-            'Butan': null,
-            'Bosna in Hercegovina': null,
-            'Belize': null,
-            'Belorusija': null,
-            'Bolivija': null,
-            'Bocvana': null,
-            'Brazilija': null,
-            'Bahrajn': null,
-            'Brunei': null,
-            'Bulgarija': null,
-            'Burkina Faso': null,
-            'Srednjeafriška republika': null,
-            'Kambodija': null,
-            'Kanada': null,
-            'Kajmanski otoki': null,
-            'Zahodni Kongo': null,
-            'Čad': null,
-            'Čile': null,
-            'Kitajska': null,
-            'Slonokoščena obala': null,
-            'Kamerun': null,
-            'Demokratična republika Kongo': null,
-            'Cookovi otoki': null,
-            'Kolumbija': null,
-            'Komori': null,
-            'Zelenortski otoki': null,
-            'Kostarika': null,
-            'Hrvaška': null,
-            'Kuba': null,
-            'Ciper': null,
-            'Češka': null,
-            'Danska': null,
-            'Džibuti': null,
-            'Dominika': null,
-            'Dominikanska republika': null,
-            'Ekvador': null,
-            'Egipt': null,
-            'Eritreja': null,
-            'Republika Salvador': null,
-            'Španija': null,
-            'Estonija': null,
-            'Etiopija': null,
-            'Fidži': null,
-            'Finska': null,
-            'Francija': null,
-            'Federativne države Mikronezije': null,
-            'Gabon': null,
-            'Gambija': null,
-            'Združeno kraljestvo Velike Britanije in Irske': null,
-            'Gvineja Bissau': null,
-            'Gruzija': null,
-            'Ekvatorialna Gvineja': null,
-            'Nemčija': null,
-            'Gana': null,
-            'Grčija': null,
-            'Grenada': null,
-            'Gvatemala': null,
-            'Gvineja': null,
-            'Gvam': null,
-            'Gvajana': null,
-            'Haiti': null,
-            'Hong Kong': null,
-            'Honduras': null,
-            'Madžarska': null,
-            'Indonezija': null,
-            'Indija': null,
-            'Iran': null,
-            'Irska': null,
-            'Irak': null,
-            'Islandija': null,
-            'Izrael': null,
-            'Ameriški Deviški otoki': null,
-            'Italija': null,
-            'Britanski Deviški otoki': null,
-            'Jamajka': null,
-            'Jordanija': null,
-            'Japonska': null,
-            'Kazahstan': null,
-            'Kenija': null,
-            'Kirgizistan': null,
-            'Kiribati': null,
-            'Južna Koreja': null,
-            'Kosovo': null,
-            'Saudova Arabija': null,
-            'Kuvajt': null,
-            'Laos': null,
-            'Latvija': null,
-            'Libija': null,
-            'Lebanon': null,
-            'Liberija': null,
-            'Saint Lucia': null,
-            'Lesoto': null,
-            'Lihtenštajn': null,
-            'Litva': null,
-            'Luksemburg': null,
-            'Madagaskar': null,
-            'Moroko': null,
-            'Malezija': null,
-            'Malavi': null,
-            'Moldova': null,
-            'Maldivi': null,
-            'Mehika': null,
-            'Mongolija': null,
-            'Marshallovi otoki': null,
-            'Severna Makedonija': null,
-            'Mali': null,
-            'Malta': null,
-            'Črna Gora': null,
-            'Monako': null,
-            'Mozambik': null,
-            'Mavricij': null,
-            'Mavretanija': null,
-            'Mjanmar': null,
-            'Namibija': null,
-            'Nikaragva': null,
-            'Nizozemska': null,
-            'Nepal': null,
-            'Nigerija': null,
-            'Niger': null,
-            'Norveška': null,
-            'Nauru': null,
-            'Nova Zelandija': null,
-            'Oman': null,
-            'Pakistan': null,
-            'Panama': null,
-            'Paragvaj': null,
-            'Peru': null,
-            'Filipini': null,
-            'Palestina': null,
-            'Palau': null,
-            'Papua Nova Gvineja': null,
-            'Poljska': null,
-            'Portugalska': null,
-            'Severna Koreja': null,
-            'Portoriko': null,
-            'Katar': null,
-            'Romunija':'ROU',
-            'Republika Južna Afrika': null,
-            'Rusija': null,
-            'Ruanda': null,
-            'Samoa': null,
-            'Senegal': null,
-            'Sejšeli': null,
-            'Singapor': null,
-            'Saint Kitts in Nevis': null,
-            'Sierra Leone': null,
-            'Slovenija': null,
-            'San Marino': null,
-            'Salomonovi otoki': null,
-            'Somalija': null,
-            'Srbija': null,
-            'Šri Lanka': null,
-            'Južni Sudan': null,
-            'Sao Tome in Principe': null,
-            'Sudan': null,
-            'Švica': null,
-            'Surinam': null,
-            'Slovaška': null,
-            'Švedska': null,
-            'Esvatini': null,
-            'Tanzanija': null,
-            'Tonga': null,
-            'Tajska': null,
-            'Tadžikistan': null,
-            'Turkmenistan': null,
-            'Vzhodni Timor': null,
-            'Togo': null,
-            'Tajvan': null,
-            'Trinidad in Tobago': null,
-            'Tunizija': null,
-            'Turčija': null,
-            'Tuvalu': null,
-            'Združeni Arabski Emirati': null,
-            'Uganda': null,
-            'Ukrajina': null,
-            'Urugvaj': null,
-            'Združene države Amerike': null,
-            'Uzbekistan': null,
-            'Vanuatu': null,
-            'Venezuela': null,
-            'Sveti Vincent in Grenadini': null,
-            'Jemen': null,
-            'Zambija': null,
-            'Zimbabve': null,
-            'Macao': null,
-            'Ferski otoki': null,
-            'Nizozemski Antili': null,
-            'Avstralazija': null,
-            'Bohemija': null,
-            'Zahodna Nemčija': null,
-            'Vzhodna Nemčija': null,
-            'Rusko kraljestvo': null,
-            'Srbija in Črna Gora': null,
-            'Češkoslovaška': null,
-            'Sovjetska Zveza': null,
-            'Jugoslavija': null
-        };
-        document.addEventListener('DOMContentLoaded', function() {
-            var elems = document.querySelectorAll('.autocomplete');
-            var instances = M.Autocomplete.init(elems, {data: countries});
-        });
-        window.fitText(document.getElementsByClassName('white_square'), 0.125);
-        window.fitText(document.getElementsByClassName('black_square'), 0.125);
-    </script>
     </body>
 </html>

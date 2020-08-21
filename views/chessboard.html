@@ -1,5 +1,4 @@
-
-<div class="chessboard">
+<div id="chessboard">
 % board = user.game.board()
 % for i, row in enumerate(reversed(board)):
 %   color = 'white_square' if i % 2 == 0 else 'black_square'
@@ -21,3 +20,8 @@
 %   end
 % end
 </div>
+
+<script>
+    window.fitText(document.getElementsByClassName('white_square'), 0.125);
+    window.fitText(document.getElementsByClassName('black_square'), 0.125);
+</script>

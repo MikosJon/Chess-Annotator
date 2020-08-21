@@ -4,7 +4,7 @@
 <h5 class="center-align">Odigrane poteze</h5>
 
 <div class="row" id="notation-box">
-    <div class="col s6" style="border-right: 1px solid;">
+    <div id="white_col" class="col s6">
         <ol>
             % for idx, (move, notation_info, anno, text) in enumerate(moves):
             %     fig_notation = to_figurine_notation(move, notation_info, anno=anno)
@@ -19,7 +19,7 @@
         </ol>
     </div>
 
-    <div class="col s6" style="background-color: bisque; padding-left: 2.5rem;">
+    <div class="col s6" id="black_col">
         <ul>
             % for idx, (move, notation_info, anno, text) in enumerate(moves):
             %     fig_notation = to_figurine_notation(move, notation_info, anno=anno)
@@ -48,12 +48,12 @@
         </div>
         <div class="row">
             % if move_num == 0:
-            <button class="btn" type="submit" formaction="/to_first" disabled>
-                <i class="material-icons">first_page</i>
-            </button>
-            <button class="btn" type="submit" formaction="/previous_move" disabled>
-                <i class="material-icons">navigate_before</i>
-            </button>
+                <button class="btn" type="submit" formaction="/to_first" disabled>
+                    <i class="material-icons">first_page</i>
+                </button>
+                <button class="btn" type="submit" formaction="/previous_move" disabled>
+                    <i class="material-icons">navigate_before</i>
+                </button>
             % else:
                 <button class="btn" type="submit" formaction="/to_first">
                     <i class="material-icons">first_page</i>

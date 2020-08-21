@@ -1,0 +1,71 @@
+% rebase('base.html', login=False, tab='user')
+
+<div class= "collection with-header">
+    <div class="collection-header"><h4>Shranjene igre</h4></div>
+% for idx, fname in enumerate(sorted(filenames)):
+    <div class="collection-item row">
+        <div class="valign-wrapper">
+        % if len(fname) >= 40:
+            <div class="col s8"><div class="game_name">{{fname[:40]}} ...</div></div>
+        % else:
+            <div class="col s8"><div class="game_name">{{fname[:40]}}</div></div>
+        % end
+        <div class="col s1">
+            <button class="btn modal-trigger" data-target="rename_{{fname}}">
+                <i class="material-icons">edit</i>
+            </button>
+        </div>
+        <div id="rename_{{fname}}" class="modal">
+            <div class="modal-content">
+                <form method="POST" action="/rename" class="col s12">
+                <div class="row">
+                    <h4>Spremeni ime</h4>
+                </div>
+                <div class="row">
+                    <input type="hidden" name="old_filename" value="{{fname}}">
+                    <div class="input-field col s12">
+                        <input type="text" id="new_filename{{idx}}" name="new_filename" required placeholder="{{fname}}">
+                        <label for="new_filename{{idx}}">Novo ime</label>
+                        <span class="helper-text">Ime bo morda spremenjeno, da se lahko varno shrani na disk</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col s10">
+                        <input type="submit" class="btn" value="Spremeni ime">
+                    </div>
+                    <div class="col s2">
+                        <button class="btn modal-close" type="button">Zapri</button>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </div>
+
+        <form method="POST" class="col s3">
+            <input type="hidden" name="filename" value="{{fname}}">
+            <div class="col s3">
+                <button class="btn" type="submit" formaction="/launch">
+                    <i class="material-icons">launch</i>
+                </button>
+            </div>
+            <div class="col s3">
+                <button class="btn" type="submit" formaction="/download">
+                    <i class="material-icons">get_app</i>
+                </button>
+            </div>
+            <div class="col s3">
+                <button class="btn" type="submit" formaction="/remove">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+        </form>
+        </div>
+    </div>
+% end
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('.modal');
+        var instances = M.Modal.init(elems);
+    });
+</script>

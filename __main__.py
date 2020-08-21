@@ -1,6 +1,9 @@
 import bottle
 import os
+import re
 import hashlib
+
+from unicodedata import normalize
 
 from src.model import Game
 from src.definicije import *
@@ -32,6 +35,9 @@ class User:
         return idx
 
 USERS_DIR = 'Users'
+SAVED_GAMES_DIR = 'saved'
+TEMP_PGN_NAME = 'current.pgn'
+
 USERS = {}
 SECRET = 'DO YOU WISH FOR A NEW WORLD?'
 
@@ -48,6 +54,13 @@ for user_dir in os.listdir(USERS_DIR):
         salt = f.read(SALT_SIZE)
         USERS[username] = User(username, key, salt)
 
+def sanitize_filename(fname): # modified version of the one in bottle.FileUpload
+    fname = normalize('NFKD', fname).encode('ASCII', 'ignore').decode('ASCII')
+    fname = os.path.basename(fname.replace('\\', os.path.sep))
+    fname = re.sub(r'[^a-zA-Z0-9-_.\s]', '', fname).strip()
+    fname = re.sub(r'[-\s]+', '-', fname).strip('.-')
+    return fname[:255] or None
+
 def get_current_user():
     username = bottle.request.get_cookie('username', secret=SECRET)
     if username is None:
@@ -56,7 +69,7 @@ def get_current_user():
 
 @bottle.get('/')
 def main():
-    return bottle.redirect('/analysis')
+    bottle.redirect('/user')
 
 @bottle.get('/static/<filename>')
 def static_file(filename):
@@ -107,6 +120,8 @@ def register():
         dklen=KEY_SIZE
     )
     os.mkdir(os.path.join(USERS_DIR, username))
+    os.mkdir(os.path.join(USERS_DIR, username, SAVED_GAMES_DIR))
+
     user = User(username, key, salt)
     USERS[username] = user
     user.store_login_info()
@@ -118,10 +133,16 @@ def logout():
     bottle.response.delete_cookie('username', path='/')
     bottle.redirect('/login')
 
+@bottle.get('/user')
+def user():
+    user = get_current_user()
+    names = os.listdir(os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR))
+    return bottle.template('user.html', filenames=names, user=user)
+
 @bottle.get('/analysis')
 def analysis():
     user = get_current_user()
-    return bottle.template('analysis.html', user=user, login=False)
+    return bottle.template('analysis.html', user=user)
 
 @bottle.post('/make_move')
 def make_move():
@@ -141,7 +162,7 @@ def make_move():
         user.last_played = user.game.last_move.color
         if user.game.game_state != GameState.Normal:
             user.game_end = user.game.game_state
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/update_move')
 def update_move():
@@ -160,7 +181,7 @@ def update_move():
         user.current_move_number -= 1
     user.last_played = user.game.last_move.color
 
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/to_first')
 def to_first():
@@ -168,7 +189,7 @@ def to_first():
     user.last_played = Color.Black
     user.current_move_number = 0
     user.game = Game()
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/previous_move')
 def previous_move():
@@ -177,7 +198,7 @@ def previous_move():
         user.current_move_number -= 1
     user.last_played = other_color(user.last_played)
     user.game.undo_last_move()
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/next_move')
 def next_move():
@@ -187,7 +208,7 @@ def next_move():
     if user.last_played == Color.Black:
         user.current_move_number += 1
     user.last_played = other_color(user.last_played)
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/to_last')
 def to_last():
@@ -199,21 +220,30 @@ def to_last():
         user.current_move_number = user.game.full_move_number - 1
     else:
         user.current_move_number = user.game.full_move_number
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/remove_from_now')
 def remove_from_now():
     user = get_current_user()
     user.moves = user.moves[:user.next_move_idx()]
     user.game_end = user.game.game_state
-    bottle.redirect('/')
+    bottle.redirect('/analysis')
 
 @bottle.post('/save_moves')
 def save_moves():
     user = get_current_user()
     result = bottle.request.forms.result
+    filename = sanitize_filename(bottle.request.forms.filename)
+    overwrite = bool(bottle.request.forms.overwrite)
 
-    with open(os.path.join(USERS_DIR, user.username, 'current.pgn'), 'w') as f:
+    if filename is None:
+        bottle.redirect('/analysis')
+
+    filepath = os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, filename)
+    if not overwrite and os.path.exists(filepath):
+        bottle.redirect('/analysis')
+
+    with open(filepath, 'x') as f:
         for idx, (move, notation_info, anno, text) in enumerate(user.moves):
             alg_notation = to_algebraic_notation(move, notation_info)
             if idx == 0:
@@ -225,9 +255,9 @@ def save_moves():
                 f.write(f'${anno}')
             if text:
                 f.write(f' {{{text}}}')
-
         f.write(' ' + result)
-    return bottle.static_file('current.pgn', root=os.path.join(USERS_DIR, user.username), download=True)
+
+    bottle.redirect('/analysis')
 
 @bottle.post('/export_pgn')
 def export_pgn():
@@ -237,15 +267,19 @@ def export_pgn():
     city = bottle.request.forms.city
     region = bottle.request.forms.region
     country = PGN_COUNTRY_CODES[bottle.request.forms.country]
+
     date = bottle.request.forms.date
     event_round = bottle.request.forms.event_round
+
     white_name = bottle.request.forms.white_name
     white_surname = bottle.request.forms.white_surname
     black_name = bottle.request.forms.black_name
     black_surname = bottle.request.forms.black_surname
+
     result = bottle.request.forms.result
 
-    with open(os.path.join(USERS_DIR, user.username, 'current.pgn'), 'w') as f:
+    root_path = os.path.join(USERS_DIR, user.username)
+    with open(os.path.join(root_path, TEMP_PGN_NAME ), 'w') as f:
         f.write(f'[Event "{event}"]\n')
         f.write(f'[Site "{city}, {region} {country}"]\n')
         f.write(f'[Date "{date}"]\n')
@@ -267,6 +301,33 @@ def export_pgn():
                 f.write(f' {{{text}}}')
         if result != '*':
             f.write(f' {result}')
-    return bottle.static_file('current.pgn', root=os.path.join(USERS_DIR, user.username), download=True)
+
+    return bottle.static_file(TEMP_PGN_NAME , root=root_path, download=True)
+
+@bottle.post('/rename')
+def rename():
+    user = get_current_user()
+    old_filename = bottle.request.forms.old_filename
+    new_filename = sanitize_filename(bottle.request.forms.new_filename)
+
+    old_filepath = os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, old_filename)
+    new_filepath = os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, new_filename)
+
+    os.rename(old_filepath, new_filepath)
+
+    bottle.redirect('/user')
+
+
+@bottle.post('/launch')
+def launch():
+    pass
+
+@bottle.post('/download')
+def download():
+    pass
+
+@bottle.post('/remove')
+def remove():
+    pass
 
 bottle.run(debug=True, reloader=True)
