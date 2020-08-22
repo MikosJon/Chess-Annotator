@@ -9,14 +9,14 @@
 %     idx -= 1
 % end
 % if idx == len(moves):
-<form method="POST" action="/make_move" class="col s12">
+<form autocomplete="off" method="POST" action="/make_move" class="col s12">
 % else:
-<form method="POST" action="/update_move" class="col s12">
+<form autocomplete="off" method="POST" action="/update_move" class="col s12">
 % end
 <div class="row">
     <div class="input-field col s4">
         % if idx == len(moves):
-            <input type="text" id="move" name="move" required>
+            <input type="text" id="move" name="move" class="autocomplete" required>
             <label for="move">Poteza</label>
         % else:
         %    move, notation_info, _, _ = moves[idx]
@@ -97,5 +97,13 @@
     document.addEventListener('DOMContentLoaded', function() {
         var selects = document.querySelectorAll('select');
         M.FormSelect.init(selects);
+
+        let moves = {
+            % for move in user.game.all_legal_moves(other_color(user.last_played)):
+            '{{to_algebraic_notation(*move)}}': null,
+            % end
+        };
+        var elem = document.getElementById('move');
+        var instances = M.Autocomplete.init(elem, {data: moves});
     });
 </script>

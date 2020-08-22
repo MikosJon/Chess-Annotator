@@ -17,7 +17,7 @@
         </div>
         <div id="rename_{{fname}}" class="modal">
             <div class="modal-content">
-                <form method="POST" action="/rename" class="col s12">
+                <form autocomplete="off" method="POST" action="/rename" class="col s12">
                 <div class="row">
                     <h4>Spremeni ime</h4>
                 </div>
@@ -42,7 +42,7 @@
         </div>
 
         <div class="col s1">
-        <form method="POST" action="/launch">
+        <form autocomplete="off" method="POST" action="/launch">
             <input type="hidden" name="filename" value="{{fname}}">
             <button class="btn" type="submit" formaction="/launch">
                 <i class="material-icons">launch</i>
@@ -51,7 +51,7 @@
         </div>
 
         <div class="col s1">
-            <form method="POST" action="/download">
+            <form autocomplete="off" method="POST" action="/download">
                 <input type="hidden" name="filename" value="{{fname}}">
                 <button class="btn" type="submit" formaction="/download">
                     <i class="material-icons">get_app</i>
@@ -66,7 +66,7 @@
         </div>
         <div class="modal" id="remove_{{fname}}">
             <div class="modal-content">
-                <form method="POST" action="/remove">
+                <form autocomplete="off" method="POST" action="/remove">
                     <input type="hidden" name="filename" value="{{fname}}">
                     <div class="row">
                         <h4>Izbriši igro</h4>
