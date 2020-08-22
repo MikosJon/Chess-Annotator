@@ -24,7 +24,7 @@
                 <div class="row">
                     <input type="hidden" name="old_filename" value="{{fname}}">
                     <div class="input-field col s12">
-                        <input type="text" id="new_filename{{idx}}" name="new_filename" required placeholder="{{fname}}">
+                        <input type="text" id="new_filename{{idx}}" name="new_filename" required value="{{fname}}">
                         <label for="new_filename{{idx}}">Novo ime</label>
                         <span class="helper-text">Ime bo morda spremenjeno, da se lahko varno shrani na disk</span>
                     </div>
@@ -41,24 +41,50 @@
             </div>
         </div>
 
-        <form method="POST" class="col s3">
+        <div class="col s1">
+        <form method="POST" action="/launch">
             <input type="hidden" name="filename" value="{{fname}}">
-            <div class="col s3">
-                <button class="btn" type="submit" formaction="/launch">
-                    <i class="material-icons">launch</i>
-                </button>
-            </div>
-            <div class="col s3">
+            <button class="btn" type="submit" formaction="/launch">
+                <i class="material-icons">launch</i>
+            </button>
+        </form>
+        </div>
+
+        <div class="col s1">
+            <form method="POST" action="/download">
+                <input type="hidden" name="filename" value="{{fname}}">
                 <button class="btn" type="submit" formaction="/download">
                     <i class="material-icons">get_app</i>
                 </button>
+            </form>
+        </div>
+
+        <div class="col s1">
+            <button class="btn modal-trigger" data-target="remove_{{fname}}">
+                <i class="material-icons">close</i>
+            </button>
+        </div>
+        <div class="modal" id="remove_{{fname}}">
+            <div class="modal-content">
+                <form method="POST" action="/remove">
+                    <input type="hidden" name="filename" value="{{fname}}">
+                    <div class="row">
+                        <h4>Izbriši igro</h4>
+                    </div>
+                    <div class="row">
+                        <p>Ali zares želite izbrisati to igro?</p>
+                    </div>
+                    <div class="row">
+                        <div class="col s10">
+                            <input type="submit" class="btn" value="Izbriši igro">
+                        </div>
+                        <div class="col s2">
+                            <button class="btn modal-close" type="button">Zapri</button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <div class="col s3">
-                <button class="btn" type="submit" formaction="/remove">
-                    <i class="material-icons">close</i>
-                </button>
-            </div>
-        </form>
+        </div>
         </div>
     </div>
 % end
