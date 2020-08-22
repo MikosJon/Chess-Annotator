@@ -17,7 +17,7 @@
 }
 
 #black_col {
-    background-color: bisque;
+    background-color: rgb(255, 217, 166);
     padding-left: 2.5rem;
 }
 
@@ -31,7 +31,7 @@
     position: relative;
     float: left;
     width: 12.5%;
-    background-color: bisque;
+    background-color: rgb(255, 217, 166);
     text-align: center;
 }
 .white_square {

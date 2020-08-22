@@ -360,6 +360,8 @@ def launch():
                         continue
                     if '-' in token:
                         continue
+                    if '*' in token:
+                        continue
 
                     if '$' in token:
                         notation, anno = token.split('$')
