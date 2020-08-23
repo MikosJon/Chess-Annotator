@@ -596,6 +596,7 @@ class Game:
             return self.king_or_knight_legal_moves(figure)
         else:
             moves = []
+            pos_white, pos_black = self.generate_positions()
             seen = [False] * 8
             '''
                           5 6 7

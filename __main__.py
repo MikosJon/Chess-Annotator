@@ -342,9 +342,11 @@ def launch():
                 if in_comment:
                     if token.endswith('}'):
                         in_comment = False
-                    text += f' {token[:-1]}'
+                        text += f' {token[:-1]}'
+                    else:
+                        text += f' {token}'
                     move, notation_info, annotation, _ = user.moves[-1]
-                    user.moves[-1] = (move, notation, annotation, text)
+                    user.moves[-1] = (move, notation_info, annotation, text)
                 else:
                     if token.startswith('{'):
                         in_comment = True
