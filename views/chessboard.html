@@ -1,22 +1,16 @@
 <div id="chessboard">
-% board = user.game.board()
-% for i, row in enumerate(reversed(board)):
-%   color = 'white_square' if i % 2 == 0 else 'black_square'
-%   for j, cell in enumerate(row):
-%     if cell is not None:
-    <div class={{color}}>
-        <div class="chess_piece">{{cell.as_piece()}}</div>
-    </div>
-%     else:
-    <div class={{color}}>
-        <div class="chess_piece">&nbsp</div>
-    </div>
-%     end
-%     if color == 'white_square':
-%       color = 'black_square'
-%     else:
-%       color = 'white_square'
-%     end
-%   end
-% end
+    % board = user.game.board()
+    % for i, row in enumerate(reversed(board)):
+    %     color = 'white_square' if i % 2 == 0 else 'black_square'
+    %     for j, cell in enumerate(row):
+              <div class={{color}}>
+                  <div class="chess_piece">{{cell.as_piece() if cell is not None else ' '}}</div>
+              </div>
+    %         if color == 'white_square':
+    %             color = 'black_square'
+    %         else:
+    %             color = 'white_square'
+    %         end
+    %     end
+    % end
 </div>

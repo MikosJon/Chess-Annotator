@@ -2,92 +2,94 @@
 
 <div class= "collection with-header">
     <div class="collection-header"><h4>Shranjene igre</h4></div>
-% for idx, fname in enumerate(sorted(filenames)):
-    <div class="collection-item row">
-        <div class="valign-wrapper">
-        % if len(fname) >= 40:
-            <div class="col s8"><div class="game_name">{{fname[:40]}} ...</div></div>
-        % else:
-            <div class="col s8"><div class="game_name">{{fname[:40]}}</div></div>
-        % end
-        <div class="col s1">
-            <button class="btn modal-trigger" data-target="rename_{{fname}}">
-                <i class="material-icons">edit</i>
-            </button>
-        </div>
-        <div id="rename_{{fname}}" class="modal">
-            <div class="modal-content">
-                <form autocomplete="off" method="POST" action="/rename" class="col s12">
-                <div class="row">
-                    <h4>Spremeni ime</h4>
+    % for idx, fname in enumerate(sorted(filenames)):
+        <div class="collection-item row">
+            <div class="valign-wrapper">
+                % if len(fname) >= 40:
+                    <div class="col s8"><div class="game_name">{{fname[:40]}} ...</div></div>
+                % else:
+                    <div class="col s8"><div class="game_name">{{fname[:40]}}</div></div>
+                % end
+                <div class="col s1">
+                    <button class="btn modal-trigger" data-target="rename_{{fname}}">
+                        <i class="material-icons">edit</i>
+                    </button>
                 </div>
-                <div class="row">
-                    <input type="hidden" name="old_filename" value="{{fname}}">
-                    <div class="input-field col s12">
-                        <input type="text" id="new_filename{{idx}}" name="new_filename" required value="{{fname}}">
-                        <label for="new_filename{{idx}}">Novo ime</label>
-                        <span class="helper-text">Ime bo morda spremenjeno, da se lahko varno shrani na disk</span>
+                <div id="rename_{{fname}}" class="modal">
+                    <div class="modal-content">
+                        <form autocomplete="off" method="POST" action="/rename" class="col s12">
+                            <div class="row">
+                                <h4>Spremeni ime</h4>
+                            </div>
+                            <div class="row">
+                                <input type="hidden" name="old_filename" value="{{fname}}">
+                                <div class="input-field col s12">
+                                    <input type="text" id="new_filename{{idx}}" name="new_filename" value="{{fname}}" required>
+                                    <label for="new_filename{{idx}}">Novo ime</label>
+                                    <span class="helper-text">
+                                        Ime bo morda spremenjeno, da se lahko varno shrani na disk
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col s10">
+                                    <input type="submit" class="btn" value="Spremeni ime">
+                                </div>
+                                <div class="col s2">
+                                    <button class="btn modal-close" type="button">Zapri</button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col s10">
-                        <input type="submit" class="btn" value="Spremeni ime">
-                    </div>
-                    <div class="col s2">
-                        <button class="btn modal-close" type="button">Zapri</button>
+
+                <div class="col s1">
+                    <form autocomplete="off" method="POST" action="/launch">
+                        <input type="hidden" name="filename" value="{{fname}}">
+                        <button class="btn" type="submit" formaction="/launch">
+                            <i class="material-icons">launch</i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="col s1">
+                    <form autocomplete="off" method="POST" action="/download">
+                        <input type="hidden" name="filename" value="{{fname}}">
+                        <button class="btn" type="submit" formaction="/download">
+                            <i class="material-icons">get_app</i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="col s1">
+                    <button class="btn modal-trigger" data-target="remove_{{fname}}">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <div class="modal" id="remove_{{fname}}">
+                    <div class="modal-content">
+                        <form autocomplete="off" method="POST" action="/remove">
+                            <input type="hidden" name="filename" value="{{fname}}">
+                            <div class="row">
+                                <h4>Izbriši igro</h4>
+                            </div>
+                            <div class="row">
+                                <p>Ali zares želite izbrisati to igro?</p>
+                            </div>
+                            <div class="row">
+                                <div class="col s10">
+                                    <input type="submit" class="btn" value="Izbriši igro">
+                                </div>
+                                <div class="col s2">
+                                    <button class="btn modal-close" type="button">Zapri</button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                </form>
             </div>
         </div>
-
-        <div class="col s1">
-        <form autocomplete="off" method="POST" action="/launch">
-            <input type="hidden" name="filename" value="{{fname}}">
-            <button class="btn" type="submit" formaction="/launch">
-                <i class="material-icons">launch</i>
-            </button>
-        </form>
-        </div>
-
-        <div class="col s1">
-            <form autocomplete="off" method="POST" action="/download">
-                <input type="hidden" name="filename" value="{{fname}}">
-                <button class="btn" type="submit" formaction="/download">
-                    <i class="material-icons">get_app</i>
-                </button>
-            </form>
-        </div>
-
-        <div class="col s1">
-            <button class="btn modal-trigger" data-target="remove_{{fname}}">
-                <i class="material-icons">close</i>
-            </button>
-        </div>
-        <div class="modal" id="remove_{{fname}}">
-            <div class="modal-content">
-                <form autocomplete="off" method="POST" action="/remove">
-                    <input type="hidden" name="filename" value="{{fname}}">
-                    <div class="row">
-                        <h4>Izbriši igro</h4>
-                    </div>
-                    <div class="row">
-                        <p>Ali zares želite izbrisati to igro?</p>
-                    </div>
-                    <div class="row">
-                        <div class="col s10">
-                            <input type="submit" class="btn" value="Izbriši igro">
-                        </div>
-                        <div class="col s2">
-                            <button class="btn modal-close" type="button">Zapri</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-        </div>
-    </div>
-% end
+    % end
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {

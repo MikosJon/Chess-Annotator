@@ -33,41 +33,13 @@
             % else:
             %    anno = moves[idx][2]
             % end
-            % if anno == '0':
-                <option value="0" selected>Brez anotacije</option>
-            % else:
-                <option value="0">Brez anotacije</option>
-            % end
-            % if anno == '1':
-                <option value="1" selected>Dobra poteza (!)</option>
-            % else:
-                <option value="1">Dobra poteza (!)</option>
-            % end
-            % if anno == '3':
-                <option value="3" selected>Zelo dobra poteza (!!)</option>
-            % else:
-                <option value="3">Zelo dobra poteza (!!)</option>
-            % end
-            % if anno == '2':
-                <option value="2" selected>Slaba poteza (?)</option>
-            % else:
-                <option value="2">Slaba poteza (?)</option>
-            % end
-            % if anno == '4':
-                <option value="4" selected>Zelo slaba poteza (??)</option>
-            % else:
-                <option value="4">Zelo slaba poteza (??)</option>
-            % end
-            % if anno == '5':
-                <option value="5" selected>Zanimiva poteza (!?)</option>
-            % else:
-                <option value="5">Zanimiva poteza (!?)</option>
-            % end
-            % if anno == '6':
-                <option value="6" selected>Vprašljiva poteza (?!)</option>
-            % else:
-                <option value="6">Vprašljiva poteza (?!)</option>
-            % end
+            <option value="0" {{'selected' if anno == 0 else ''}}>Brez anotacije</option>
+            <option value="1" {{'selected' if anno == 1 else ''}}>Dobra poteza (!)</option>
+            <option value="2" {{'selected' if anno == 2 else ''}}>Slaba poteza (?)</option>
+            <option value="3" {{'selected' if anno == 3 else ''}}>Zelo dobra poteza (!!)</option>
+            <option value="4" {{'selected' if anno == 4 else ''}}>Zelo slaba poteza (??)</option>
+            <option value="5" {{'selected' if anno == 5 else ''}}>Zanimiva poteza (!?)</option>
+            <option value="6" {{'selected' if anno == 6 else ''}}>Vprašljiva poteza (?!)</option>
         </select>
     </div>
 </div>
@@ -84,11 +56,7 @@
 </div>
 <div class="row">
     <div class="col s12">
-    % if idx == len(moves):
-        <input type="submit" class="btn" value="Pošlji">
-    % else:
-        <input type="submit" class="btn" value="Posodobi">
-    % end
+        <input type="submit" class="btn" value={{'Pošlji' if idx == len(moves) else 'Posodobi'}}>
     </div>
 </div>
 </form>

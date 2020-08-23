@@ -3,51 +3,42 @@
     <head>
         <title>Chess-Annotator</title>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link type="text/css" rel="stylesheet" href="/static/materialize.css"  media="screen,projection">
+        <link type="text/css" rel="stylesheet" href="/static/materialize.min.css"  media="screen,projection">
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
-    % from src.definicije import *
-    <div class="container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="#" class="brand-logo center">Chess-Annotator</a>
-            % if not login:
-            <ul class="left">
-                % if tab == 'user':
-                <li class="active">
-                % else:
-                <li>
-                % end
-                    <a href="/user"><i class="material-icons left">account_circle</i>{{user.username}}</a>
-                </li>
+        <div class="container">
+        <nav>
+            <div class="nav-wrapper">
+                <a href="#" class="brand-logo center">Chess-Annotator</a>
+                % if not login:
+                <ul class="left">
+                    <li {{'class="active"' if tab == 'user' else ''}}>
+                        <a href="/user"><i class="material-icons left">account_circle</i>{{user.username}}</a>
+                    </li>
 
-                % if tab == 'analysis':
-                <li class="active">
-                % else:
-                <li>
+                    <li {{'class="active"' if tab == 'analysis' else ''}}>
+                        <a href="/analysis">Analiza</a>
+                    </li>
+                </ul>
+                <ul class="right">
+                    <li><a href="/logout">Odjavi me!</a></li>
+                </ul>
                 % end
-                    <a href="/analysis">Analiza</a>
-                </li>
-            </ul>
-            <ul class="right">
-                <li><a href="/logout">Odjavi me!</a></li>
-            </ul>
-            % end
+            </div>
+        </nav>
         </div>
-    </nav>
-    </div>
-    <div class="section">
-    <div class="container">
-        {{!base}}
-    </div>
-    </div>
-    <script src="static/materialize.js"></script>
-    <script src="static/fittext.js"></script>
-    <script>
-        window.fitText(document.getElementsByClassName('white_square'), 0.125);
-        window.fitText(document.getElementsByClassName('black_square'), 0.125);
-    </script>
+        <div class="container">
+            <div class="section">
+                {{!base}}
+            </div>
+        </div>
+        <script src="static/materialize.min.js"></script>
+        <script src="static/fittext.js"></script>
+        <script>
+            window.fitText(document.getElementsByClassName('white_square'), 0.125);
+            window.fitText(document.getElementsByClassName('black_square'), 0.125);
+        </script>
     </body>
 </html>

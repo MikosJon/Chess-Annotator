@@ -10,9 +10,9 @@
             %     fig_notation = to_figurine_notation(move, notation_info, anno=anno)
             %     if move.color == Color.White:
             %         if last_color == Color.White and idx // 2 + 1 == move_num:
-            <li style="background-color: yellow;">{{fig_notation}}</li>
+                          <li style="background-color: yellow;">{{fig_notation}}</li>
             %         else:
-            <li>{{fig_notation}}</li>
+                          <li>{{fig_notation}}</li>
             %         end
             %     end
             % end
@@ -25,14 +25,14 @@
             %     fig_notation = to_figurine_notation(move, notation_info, anno=anno)
             %     if move.color == Color.Black:
             %         if last_color == Color.Black and idx // 2 + 1 == move_num:
-            <li style="background-color: yellow;">{{fig_notation}}</li>
+                          <li style="background-color: yellow;">{{fig_notation}}</li>
             %         else:
-            <li>{{fig_notation}}</li>
+                          <li>{{fig_notation}}</li>
             %         end
             %     end
             % end
             % if moves and moves[-1][0].color == Color.White:
-            <li>&nbsp</li>
+                  <li> </li>
             % end
         </ul>
     </div>

@@ -9,14 +9,14 @@ from src.model import Game
 from src.definicije import *
 
 class User:
-    def __init__(self, uname, key, salt):
-        self.username = uname
+    def __init__(self, username, key, salt):
+        self.username = username
         self.key = key
         self.salt = salt
         self.setup_game()
 
     def setup_game(self):
-        self.curr_file = ''
+        self.current_file = ''
         self.game = Game()
 
         self.moves = []
@@ -55,7 +55,7 @@ for user_dir in os.listdir(USERS_DIR):
         salt = f.read(SALT_SIZE)
         USERS[username] = User(username, key, salt)
 
-def sanitize_filename(fname): # modified version of the one in bottle.FileUpload
+def sanitize_filename(fname):   # modified version of the one in bottle.FileUpload
     fname = normalize('NFKD', fname).encode('ASCII', 'ignore').decode('ASCII')
     fname = os.path.basename(fname.replace('\\', os.path.sep))
     fname = re.sub(r'[^a-zA-Z0-9-_.\s]', '', fname).strip()
@@ -126,6 +126,7 @@ def register():
     user = User(username, key, salt)
     USERS[username] = user
     user.store_login_info()
+
     bottle.response.set_cookie('username', user.username, path='/', secret=SECRET)
     bottle.redirect('/')
 
@@ -142,8 +143,7 @@ def user():
 
 @bottle.get('/analysis')
 def analysis():
-    user = get_current_user()
-    return bottle.template('analysis.html', user=user)
+    return bottle.template('analysis.html', user=get_current_user())
 
 @bottle.post('/make_move')
 def make_move():
@@ -198,10 +198,10 @@ def to_first():
 @bottle.post('/previous_move')
 def previous_move():
     user = get_current_user()
+    user.game.undo_last_move()
     if user.last_played == Color.White:
         user.current_move_number -= 1
     user.last_played = other_color(user.last_played)
-    user.game.undo_last_move()
     bottle.redirect('/analysis')
 
 @bottle.post('/next_move')
@@ -246,9 +246,6 @@ def save_moves():
     filename = sanitize_filename(bottle.request.forms.filename)
     overwrite = bool(bottle.request.forms.overwrite)
 
-    if filename is None:
-        bottle.redirect('/analysis')
-
     filepath = os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, filename)
     if not overwrite and os.path.exists(filepath):
         bottle.redirect('/analysis')
@@ -259,7 +256,7 @@ def save_moves():
             if idx == 0:
                 f.write('1.')
             elif move.color == Color.White:
-                f.write(' ' + str(idx // 2 + 1) + '.')
+                f.write(f' {idx // 2 + 1}.')
             f.write(f' {alg_notation}')
             if anno != '0':
                 f.write(f'${anno}')
@@ -267,7 +264,7 @@ def save_moves():
                 f.write(f' {{{text}}}')
         f.write(' ' + result)
 
-    user.curr_file = filename
+    user.current_file = filename
     bottle.redirect('/analysis')
 
 @bottle.post('/export_pgn')
@@ -304,7 +301,7 @@ def export_pgn():
             if idx == 0:
                 f.write('1.')
             elif move.color == Color.White:
-                f.write(' ' + str(idx // 2 + 1) + '.')
+                f.write(f' {idx // 2 + 1}.')
             f.write(f' {alg_notation}')
             if anno != '0':
                 f.write(f'${anno}')
@@ -325,7 +322,6 @@ def rename():
     new_filepath = os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, new_filename)
 
     os.rename(old_filepath, new_filepath)
-
     bottle.redirect('/user')
 
 @bottle.post('/launch')
@@ -333,34 +329,28 @@ def launch():
     user = get_current_user()
     filename = bottle.request.forms.filename
 
+    user.setup_game()
     filepath = os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, filename)
     with open(filepath, 'r') as f:
-        user.setup_game()
         in_comment = False
-
         notation = ''
         anno = '0'
         text = ''
 
         for line in f:
-            tokens = line.split(' ')
-            for token in tokens:
+            for token in line.split(' '):
                 if in_comment:
                     if token.endswith('}'):
                         in_comment = False
                     text += f' {token[:-1]}'
-                    m, n, a, _ = user.moves[-1]
-                    user.moves[-1] = (m, n, a, text)
+                    move, notation_info, annotation, _ = user.moves[-1]
+                    user.moves[-1] = (move, notation, annotation, text)
                 else:
                     if token.startswith('{'):
                         in_comment = True
                         text = token[1:]
                         continue
-                    if '.' in token:
-                        continue
-                    if '-' in token:
-                        continue
-                    if '*' in token:
+                    if any(char in token for char in '*-.'):
                         continue
 
                     if '$' in token:
@@ -373,7 +363,7 @@ def launch():
                     user.moves.append((*user.game.moves[-1], anno, ''))
 
     user.game_end = user.game.game_state
-    user.curr_file = filename
+    user.current_file = filename
     to_first()
 
 @bottle.post('/download')
@@ -392,4 +382,4 @@ def remove():
     os.remove(os.path.join(USERS_DIR, user.username, SAVED_GAMES_DIR, filename))
     bottle.redirect('/user')
 
-bottle.run(debug=True, reloader=True)
+bottle.run()
