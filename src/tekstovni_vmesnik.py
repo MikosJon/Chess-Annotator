@@ -268,3 +268,6 @@ class CLI:
                 with open('movetext.txt', 'a', encoding='utf-8') as f:
                     f.write(' 1/2-1/2')
                 break
+
+if __name__ == '__main__':
+    raise DeprecationWarning("We don't use that here anymore")

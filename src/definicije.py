@@ -62,9 +62,6 @@ class Figure:
         else:
             return TO_BLACK_PIECE[self.name]
 
-    def as_name(self):
-        return self.color.name + ' ' + self.name.name
-
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
 KING_MOVES       = {(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)}
@@ -404,16 +401,21 @@ def pos_to_square(position):
 def square_to_pos(square):
     return (int(square[-1]), 'abcdefgh'.index(square[-2]) + 1)
 
-R_PIECE = r'(?P<name>[KQRBN]|[\u2654-\u2658\u265A-\u265E])(?P<file>[a-h])?(?P<rank>[1-8])?(?P<captures>x)?(?P<target>[a-h][1-8])(?P<extra>[+#])?(?P<promo_piece>)(?P<castling>)(?P<long_castle>)'
-R_PAWN = r'(?P<name>[\u2659\u265F])?((?P<file>[a-h])(?P<captures>x))?(?P<target>[a-h][1-8])(=(?P<promo_piece>[KQRBN]|[\u2654-\u265F]))?(?P<extra>[+#])?(?P<rank>)(?P<castling>)(?P<long_castle>)'
-R_CASTLING = r'(?P<castling>O-O(?P<long_castle>-O)?(?P<extra>[+#])?)(?P<name>)(?P<file>)(?P<rank>)(?P<captures>)(?P<target>)(?P<promo_piece>)'
+R_PIECE = r'(?P<name>[KQRBN]|[\u2654-\u2658\u265A-\u265E])(?P<file>[a-h])?(?P<rank>[1-8])?'\
+          r'(?P<captures>x)?(?P<target>[a-h][1-8])(?P<extra>[+#])?(?P<promo_piece>)(?P<castling>)(?P<long_castle>)'
+
+R_PAWN = r'(?P<name>[\u2659\u265F])?((?P<file>[a-h])(?P<captures>x))?(?P<target>[a-h][1-8])'\
+         r'(=(?P<promo_piece>[KQRBN]|[\u2654-\u265F]))?(?P<extra>[+#])?(?P<rank>)(?P<castling>)(?P<long_castle>)'
+
+R_CASTLING = r'(?P<castling>O-O(?P<long_castle>-O)?(?P<extra>[+#])?)(?P<name>)(?P<file>)'\
+             r'(?P<rank>)(?P<captures>)(?P<target>)(?P<promo_piece>)'
 
 def parse_notation(notation):
-    if m := re.fullmatch(R_PIECE, notation):
+    if (m := re.fullmatch(R_PIECE, notation)):
         return m
-    elif m := re.fullmatch(R_PAWN, notation):
+    elif (m := re.fullmatch(R_PAWN, notation)):
         return m
-    elif m := re.fullmatch(R_CASTLING, notation):
+    elif (m := re.fullmatch(R_CASTLING, notation)):
         return m
 
 def to_figurine_notation(move, notation_info, *, anno='0'):
