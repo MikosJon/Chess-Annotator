@@ -55,7 +55,7 @@ for user_dir in os.listdir(USERS_DIR):
         salt = f.read(SALT_SIZE)
         USERS[username] = User(username, key, salt)
 
-def sanitize_filename(fname):   # modified version of the one in bottle.FileUpload
+def sanitize_filename(fname):   # spremenjena verzija metode v bottle.FileUpload
     fname = normalize('NFKD', fname).encode('ASCII', 'ignore').decode('ASCII')
     fname = os.path.basename(fname.replace('\\', os.path.sep))
     fname = re.sub(r'[^a-zA-Z0-9-_.\s]', '', fname).strip()
@@ -147,6 +147,10 @@ def analysis():
 
 @bottle.post('/make_move')
 def make_move():
+    '''
+        Preberemo dobljeno notacijo in poskušamo opraviti željeno potezo.
+        Če je bila notacija ustrezna, nastavimo trenutno stanje vmesnika.
+    '''
     user = get_current_user()
     notation = bottle.request.forms.move
     annotation = bottle.request.forms.anno
@@ -160,16 +164,22 @@ def make_move():
         pass
     else:
         user.moves.append((*user.game.moves[-1], annotation, text))
+
         user.current_move_number = user.game.full_move_number
         if user.game.current_color == Color.White:
             user.current_move_number -= 1
+
         user.last_played = user.game.last_move.color
         if user.game.game_state != GameState.Normal:
             user.game_end = user.game.game_state
+
     bottle.redirect('/analysis')
 
 @bottle.post('/update_move')
 def update_move():
+    '''
+        Preberemo podatke in posodobimo shranjeno potezo.
+    '''
     user = get_current_user()
     anno = bottle.request.forms.anno
     text = bottle.request.forms.text
@@ -189,14 +199,21 @@ def update_move():
 
 @bottle.post('/to_first')
 def to_first():
+    '''
+        Spremenimo stanje vmesnika, da prikažemo začetno pozicijo.
+    '''
     user = get_current_user()
     user.last_played = Color.Black
     user.current_move_number = 0
     user.game = Game()
+
     bottle.redirect('/analysis')
 
 @bottle.post('/previous_move')
 def previous_move():
+    '''
+        Spremenimo stanje vmesnika, da prikažemo prejšno pozicijo.
+    '''
     user = get_current_user()
     user.game.undo_last_move()
     if user.last_played == Color.White:
@@ -206,6 +223,9 @@ def previous_move():
 
 @bottle.post('/next_move')
 def next_move():
+    '''
+        Spremenimo stanje vmesnika, da prikažemo naslednjo pozicijo.
+    '''
     user = get_current_user()
     next_move = user.moves[user.next_move_idx()]
     user.game.make_move(next_move[0])
@@ -216,6 +236,9 @@ def next_move():
 
 @bottle.post('/to_last')
 def to_last():
+    '''
+        Spremenimo stanje vmesnika, da prikažemo zadnjo pozicijo.
+    '''
     user = get_current_user()
     for move, _, _, _ in user.moves[user.next_move_idx():]:
         user.game.make_move(move)
@@ -228,19 +251,27 @@ def to_last():
 
 @bottle.post('/remove_from_now')
 def remove_from_now():
+    '''
+        Odstranimo vse nadaljne opravljene poteze in shranjene pozicije iz spomina.
+    '''
     user = get_current_user()
     user.moves = user.moves[:user.next_move_idx()]
     user.game_end = user.game.game_state
     bottle.redirect('/analysis')
 
-@bottle.post('/new_position')
-def new_position():
+@bottle.post('/new_game')
+def new_game():
     user = get_current_user()
     user.setup_game()
     bottle.redirect('/analysis')
 
 @bottle.post('/save_moves')
 def save_moves():
+    '''
+        Preberemo novo ime datoteke in ga spremenimo, da je primerno za shranjevanje na disk.
+        Nato zapišemo poteze po PGN standardu (pri čemer nimamo zapisanih nobenih značk,
+        ki jih standard dopušča).
+    '''
     user = get_current_user()
     result = bottle.request.forms.result
     filename = sanitize_filename(bottle.request.forms.filename)
@@ -269,6 +300,10 @@ def save_moves():
 
 @bottle.post('/export_pgn')
 def export_pgn():
+    '''
+        Preberemo podatke in zapišemo vseh 7 potrebnih značk za dolgoročno shranjevanje PGN datotek
+        ter opravljene poteze. Vse sledi PGN standardu. Nato datoteko izvozimo uporabniku.
+    '''
     user = get_current_user()
 
     event = bottle.request.forms.event
@@ -326,6 +361,9 @@ def rename():
 
 @bottle.post('/launch')
 def launch():
+    '''
+        Preberemo izbrano datoteko s shranjenimi potezami in jih prikažemo v vmesniku.
+    '''
     user = get_current_user()
     filename = bottle.request.forms.filename
 
@@ -370,6 +408,9 @@ def launch():
 
 @bottle.post('/download')
 def download():
+    '''
+        Izbrano datoteko s potezami izvozimo uporabniku.
+    '''
     user = get_current_user()
     filename = bottle.request.forms.filename
 
@@ -378,6 +419,9 @@ def download():
 
 @bottle.post('/remove')
 def remove():
+    '''
+        Izbrano datoteko s potezami odstranimo z diska.
+    '''
     user = get_current_user()
     filename = bottle.request.forms.filename
 

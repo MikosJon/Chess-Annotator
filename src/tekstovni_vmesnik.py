@@ -62,7 +62,7 @@ class CLI:
             if draw in 'YNyn':
                 break
         if draw.upper() == 'Y':
-            self.game.claim_draw()
+            self.game.game_state = GameState.Draw
 
     def vs_yourself(self):
         color = 'Beli' if self.game.current_color == Color.White else 'Črni'
@@ -116,11 +116,11 @@ class CLI:
             if self.game.claimable_draw:
                 self.inquire_draw()
         else:
-            all_legal_moves = self.game.all_legal_moves(self.game.current_color)
+            all_legal_moves = list*self.game.all_legal_moves(self.game.current_color)()
             move, notation_info = choice(all_legal_moves)
 
             if self.game.claimable_draw:
-                self.game.claim_draw()
+                self.game.game_state = GameState.Draw
             else:
                 fig_notation = to_figurine_notation(move, notation_info)
                 print(fig_notation, '| Poteza #' + str(self.game.full_move_number))
@@ -138,7 +138,7 @@ class CLI:
                     f.write(' ' + to_algebraic_notation(self.game.last_move, self.game.last_notation_info))
 
             if self.game.claimable_draw:
-                self.game.claim_draw()
+                self.game.game_state = GameState.Draw
 
     def annotation_handler(self):
         while True:
@@ -228,7 +228,7 @@ class CLI:
 
     def one_game(self):
         while True:
-            all_legal_moves = self.game.all_legal_moves(self.game.current_color)
+            all_legal_moves = list(self.game.all_legal_moves(self.game.current_color))
             notations = []
             for move, notation_info in all_legal_moves:
                 notations.append(to_figurine_notation(move, notation_info))
@@ -237,14 +237,14 @@ class CLI:
             move, notation_info = choice(all_legal_moves)
 
             if self.game.claimable_draw:
-                self.game.claim_draw()
+                self.game.game_state = GameState.Draw
             else:
                 fig_notation = to_figurine_notation(move, notation_info)
                 print(fig_notation, '| Poteza #' + str(self.game.full_move_number))
                 self.game.make_move(move)
 
             if self.game.claimable_draw:
-                self.game.claim_draw()
+                self.game.game_state = GameState.Draw
 
             print('Vse možne poteze:', legal_move_notations)
 
@@ -270,4 +270,4 @@ class CLI:
                 break
 
 if __name__ == '__main__':
-    raise DeprecationWarning("We don't use that here anymore")
+    raise DeprecationWarning("We don't do that here anymore.")

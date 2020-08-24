@@ -76,6 +76,9 @@ class Game:
         return out
 
     def board(self):
+        '''
+            Vrnemo gnezden seznam s figurami na svojihi mestih.
+        '''
         board = [[None] * 8 for _ in range(8)]
         for fig in self.in_play:
             row, col = fig.position
@@ -83,6 +86,9 @@ class Game:
         return board
 
     def generate_positions(self):
+        '''
+            Generiramo množici pozicij belih in črnih figur.
+        '''
         pos_white = set()
         pos_black = set()
 
@@ -121,15 +127,20 @@ class Game:
         self.in_play.add(pawn)
 
     def undo_last_move_promotion(self):
+        '''
+            Verzija self.undo_promotion(self, pawn), ki je uporabljena za
+            razveljavljenje zadnje poteze.
+        '''
         pawn = self.promoted_pawns.pop()
         self.in_play.add(pawn)
         promoted_piece = self.get_figure_by_pos(self.last_move.target)
         self.in_play.remove(promoted_piece)
 
-    def claim_draw(self):
-        self.game_state = GameState.Draw
-
     def update_game_state(self):
+        '''
+            Po opravljeni potezi spremenimo trenutnega igralca, število opravljenih potez,
+            shranimo trenutno stanje [FEN standard] in preverimo prisiljene neodločene izide.
+        '''
         self.current_color = other_color(self.current_color)
 
         if self.last_move.color == Color.Black:
@@ -149,7 +160,7 @@ class Game:
         elif not self.is_king_in_check_now(self.current_color):
             for figure in self.in_play:
                 if figure.color == self.current_color:
-                    if len(self.figure_legal_moves(figure)) != 0:
+                    if len(list(self.figure_legal_moves(figure))) != 0:
                         break
             else:
                 self.game_state = GameState.Draw
@@ -175,6 +186,16 @@ class Game:
                 self.claimable_draw = False
 
     def check_forced_draw(self):
+        '''
+            Preverimo, ali je v igri premalo figur za možen mat.
+            Kombinacije, s katerimi je nemogoče matirati so:
+              -  Kralj vs. Kralj
+              -  Kralj + Lovec/Skakač vs. Kralj
+              -  Kralj + Lovec vs. Kralj + Lovec, kjer sta lovca na različnih barvah.
+
+            [Kralj + 2x Skakač vs. Kralj lahko pripelje do mata, vendar igralec s kraljem
+             v to ne more biti prisiljen]
+        '''
         white = []
         black = []
         for fig in self.in_play:
@@ -201,6 +222,9 @@ class Game:
             self.game_state = GameState.Draw
 
     def generate_FEN(self):
+        '''
+            Generiramo FEN trenutnega stanje [Forsyth-Edwards Notation].
+        '''
         pieces = ''
         board = [[None] * 8 for _ in range(8)]
         for figure in self.in_play:
@@ -239,15 +263,24 @@ class Game:
 
         return ' '.join([pieces, color, castling, en_passant, half_move, full_move])
 
-    def get_info(self, figure, target, *, promo_piece=None):
+    def get_notation_info(self, figure, target, *, promo_piece=None):
+        '''
+            Generiramo NotationInfo objekt, s podatki o potezi:
+              -  ali vzamemo nasprotnikovo figuro
+              -  ali spravimo nasprotnika v šah
+              -  ali matiramo nasprotnika
+              -  ali lahko le ta figura gre na ciljno mesto
+              -  če ne, si shranimo ali obstaja figura z istim imenom v istem stolpcu/vrstici,
+                 ki lahko pride na ciljno mesto
+              -  če pride do promocije, katera figura naj nadomesti kmeta
+        '''
         notation_info = NotationInfo()
         notation_info.promotion = promo_piece
 
         opponent = other_color(figure.color)
         notation_info.check = self.is_king_in_check_after(figure, target, color=opponent, promo_piece=promo_piece)
         if notation_info.check:
-            if len(self.all_legal_moves_after(figure, target, color=opponent, promo_piece=promo_piece)) == 0:
-                notation_info.mate = True
+            notation_info.mate = self.is_mate_after(figure, target, color=opponent, promo_piece=promo_piece)
 
         same_pieces = self.get_figures_by_name(figure.name, figure.color)
         same_pieces.remove(figure)
@@ -267,6 +300,9 @@ class Game:
         return notation_info
 
     def get_move(self, figure, target, *, promo_piece=None, castling_checked=False):
+        '''
+            Generiramo Move objekt iz figure in ciljnega mesta [ter možne promocijske figure].
+        '''
         move = Move()
         move.piece = figure.name
         move.color = figure.color
@@ -282,6 +318,10 @@ class Game:
         return move
 
     def move_figure_to(self, figure, target, *, promo_piece=None):
+        '''
+            Premaknemo figuro na ciljno mesto in pri tem vzamemo nasprotnikovo figuro,
+            promoviramo, če je to potrebno, in nastavimo novo mesto za en passant.
+        '''
         if self.is_en_passant(figure, target):
             captured_figure = self.get_figure_by_pos(self.last_move.target)
         else:
@@ -313,6 +353,10 @@ class Game:
         return False
 
     def is_move_possible(self, figure, target, *, ignore_king=False):
+        '''
+            Preverimo, ali je premik figure možen oz. neoviran. Ne upoštevamo dejstva,
+            da bi lahko naš kralj po tem premiku bil v šahu.
+        '''
         if not ignore_king:
             opponent_king = self.get_figures_by_name(Name.King, other_color(figure.color))[0]
             if target == opponent_king.position:
@@ -340,14 +384,7 @@ class Game:
         else:
             dy = move[1] // abs(move[1])
 
-        pos_white = set()
-        pos_black = set()
-
-        for fig in self.in_play:
-            if fig.color == Color.White:
-                pos_white.add(fig.position)
-            else:
-                pos_black.add(fig.position)
+        pos_white, pos_black = self.generate_positions()
 
         if figure.color == Color.White and target in pos_white:
             return False
@@ -380,6 +417,15 @@ class Game:
         return True
 
     def is_castling_legal(self, king, target):   # tole ni najlepša koda na svetu, ampak deluje
+        '''
+            Preverimo, ali je možno roširanje. Potrebni pogoji so:
+              -  roširanje poteka v robni vrsti
+              -  kralj in trdnjava se nista premaknila v celotni igri
+              -  med trdnjavo in kraljem ni nobene druge figure
+              -  kralj ni v šahu
+              -  kralj se ne premakne skozi polje, v katerem bi bil v šahu
+              -  kralj ne konča roširanja v šahu
+        '''
         if king.name != Name.King:
             return False
         if king.color == Color.White:
@@ -471,11 +517,17 @@ class Game:
         for fig in list(self.in_play):
             if fig.color == color:
                 continue
+            # ponavadi premik figure, kjer bi vzeli kralja, ni legalna, tu pa potrebujemo ravno to,
+            # zato nastavimo zastavico, ki preskoči ta pogoj v preverjanju poteze
             if self.is_move_possible(fig, king.position, ignore_king=True):
                 return True
         return False
 
     def is_king_in_check_after(self, figure, target,  *, color=None, promo_piece=None):
+        '''
+            Preverimo, ali je kralj [privzeto iste barve kot figura] v šahu po opravljenem premiku.
+            Po dobljenem odgovoru vrnemo stanje na začetno.
+        '''
         if color is None:
             color = figure.color
 
@@ -525,6 +577,9 @@ class Game:
         return answer
 
     def pawn_legal_moves(self, figure):
+        '''
+            Izmed vseh možnih premikov kmeta, vrnemo vse legalne.
+        '''
         moves = []
         pos_white, pos_black = self.generate_positions()
 
@@ -553,17 +608,20 @@ class Game:
             if target[0] not in {1, 8}:
                 if not self.is_king_in_check_after(figure, target):
                     move = self.get_move(figure, target)
-                    notation_info = self.get_info(figure, target)
+                    notation_info = self.get_notation_info(figure, target)
                     moves.append((move, notation_info))
             else:
                 for promo_piece in PROMOTION_PIECES:
                     if not self.is_king_in_check_after(figure, target, promo_piece=promo_piece):
                         move = self.get_move(figure, target, promo_piece=promo_piece)
-                        notation_info = self.get_info(figure, target, promo_piece=promo_piece)
+                        notation_info = self.get_notation_info(figure, target, promo_piece=promo_piece)
                         moves.append((move, notation_info))
         return moves
 
     def king_or_knight_legal_moves(self, figure):
+        '''
+            Izmed vseh možnih premikov kralja oziroma skakača, vrnemo vse legalne.
+        '''
         moves = []
         pos_white, pos_black = self.generate_positions()
 
@@ -577,18 +635,23 @@ class Game:
                 continue
             if not self.is_king_in_check_after(figure, target):
                 move = self.get_move(figure, target)
-                notation_info = self.get_info(figure, target)
+                notation_info = self.get_notation_info(figure, target)
                 moves.append((move, notation_info))
         if figure.name == Name.King:
             for dy in {-2, 2}:
                 target = (figure.position[0], figure.position[1] + dy)
                 if self.is_castling_legal(figure, target):
                     move = self.get_move(figure, target, castling_checked=True)
-                    notation_info = self.get_info(figure, target)
+                    notation_info = self.get_notation_info(figure, target)
                     moves.append((move, notation_info))
         return moves
 
     def figure_legal_moves(self, figure):
+        '''
+            Generiramo vse legalne poteze prejete figure. Za kmeta, kralja in skakača uporabimo
+            pomožno funkcijo, za lovca, trdnjavo in kraljico pa iščemo vsa prazna mesta v primernih
+            smereh, dokler ne najdemo najdaljšega možnega premika v vsaki smeri.
+        '''
         if figure.name == Name.Pawn:
             return self.pawn_legal_moves(figure)
 
@@ -599,9 +662,9 @@ class Game:
             pos_white, pos_black = self.generate_positions()
             seen = [False] * 8
             '''
-                          5 6 7
-            directions := 3   4
-                          0 1 2
+                     5 6 7
+            smeri := 3   4
+                     0 1 2
             '''
             if figure.name == Name.Rook:
                 for i in {0, 2, 5, 7}:
@@ -634,20 +697,24 @@ class Game:
                             seen[idx] = True
                     if not self.is_king_in_check_after(figure, target):
                         move = self.get_move(figure, target)
-                        notation_info = self.get_info(figure, target)
+                        notation_info = self.get_notation_info(figure, target)
                         moves.append((move, notation_info))
             return moves
 
     def all_legal_moves(self, color):
-        moves = []
+        '''
+            Eno po eno generiramo vse legalne poteze, ki jih lahko igralec opravi.
+        '''
         for figure in list(self.in_play):
             if figure.color != color:
                 continue
-            for bundle in self.figure_legal_moves(figure):
-                moves.append(bundle)
-        return moves
+            yield from self.figure_legal_moves(figure)
 
-    def all_legal_moves_after(self, figure, target, *, color=None, promo_piece=None):
+    def is_mate_after(self, figure, target, *, color=None, promo_piece=None):
+        '''
+            Preverimo, ali ima igralec [privzeto nasprotnik od barve figure] kakšno legalno potezo
+            po premiku. Nato ponastavimo stanje na začetno.
+        '''
         if color is None:
             color = other_color(figure.color)
 
@@ -679,7 +746,11 @@ class Game:
         else:
             self.move_figure_to(figure, target, promo_piece=promo_piece)
 
-        moves = self.all_legal_moves(color)
+        for _ in self.all_legal_moves(color):
+            answer = False
+            break
+        else:
+            answer = True
 
         if promo_piece is not None:
             self.undo_promotion(figure)
@@ -693,9 +764,15 @@ class Game:
 
         if castling:
             rook.position = rook_starting
-        return moves
+        return answer
 
     def make_move_from_notation(self, notation):
+        '''
+            Prejeto notacijo razčlenimo in glede na dobljen match objekt preverimo,
+            da res samo ena figura lahko opravi to potezo. Roširanje obravnavamo posebej.
+            Nakar opravimo premik in nastavimo zastavice o morebitnem premiku kralja/trdnjave,
+            ki nam pomagajo pri roširanju.
+        '''
         if self.game_state != GameState.Normal:
             raise ValueError('Game is already over')
 
@@ -719,7 +796,7 @@ class Game:
                 raise ValueError('Illegal move')
 
             move = self.get_move(king, target)
-            notation_info = self.get_info(king, target)
+            notation_info = self.get_notation_info(king, target)
 
             king.position = target
             self.moves.append((move, notation_info))
@@ -775,7 +852,7 @@ class Game:
         figure = possible_figures[0]
 
         move = self.get_move(figure, target, promo_piece=promo_piece)
-        notation_info = self.get_info(figure, target, promo_piece=promo_piece)
+        notation_info = self.get_notation_info(figure, target, promo_piece=promo_piece)
 
         self.move_figure_to(figure, target, promo_piece=promo_piece)
         self.moves.append((move, notation_info))
@@ -803,6 +880,11 @@ class Game:
         self.update_game_state()
 
     def make_move(self, move):
+        '''
+            Ker imamo že Move objekt, natanko vemo katera figura se mora premakniti.
+            Roširanje obravnavamo posebej. Opravimo premik in nastavimo zastavice
+            o morebitnem premiku kralja/trdnjave, ki nam pomagajo pri roširanju.
+        '''
         if self.game_state != GameState.Normal:
             raise ValueError('Game is already over')
 
@@ -814,7 +896,7 @@ class Game:
         if not self.is_legal(figure, move.target, promo_piece=move.promo_piece):
             raise ValueError('Illegal move')
 
-        notation_info = self.get_info(figure, move.target, promo_piece=move.promo_piece)
+        notation_info = self.get_notation_info(figure, move.target, promo_piece=move.promo_piece)
         self.moves.append((move, notation_info))
 
         if move.castling:
@@ -860,6 +942,9 @@ class Game:
         self.update_game_state()
 
     def undo_last_move(self):
+        '''
+            Razveljavimo zadnjo potezo in vrnemo igro na zadnje shranjeno stanje.
+        '''
         if len(self.moves) == 0:
             raise ValueError('No moves to undo')
 
@@ -919,4 +1004,3 @@ class Game:
             self.full_move_number -= 1
 
         self.current_color = last_move.color
-        return last_move, last_notation_info

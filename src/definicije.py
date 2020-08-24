@@ -399,7 +399,7 @@ def pos_to_square(position):
     return 'abcdefgh'[col - 1] + str(row)
 
 def square_to_pos(square):
-    return (int(square[-1]), 'abcdefgh'.index(square[-2]) + 1)
+    return (int(square[-1]), 'abcdefgh'.index(square[0]) + 1)
 
 R_PIECE = r'(?P<name>[KQRBN]|[\u2654-\u2658\u265A-\u265E])(?P<file>[a-h])?(?P<rank>[1-8])?'\
           r'(?P<captures>x)?(?P<target>[a-h][1-8])(?P<extra>[+#])?(?P<promo_piece>)(?P<castling>)(?P<long_castle>)'
@@ -411,6 +411,10 @@ R_CASTLING = r'(?P<castling>O-O(?P<long_castle>-O)?(?P<extra>[+#])?)(?P<name>)(?
              r'(?P<rank>)(?P<captures>)(?P<target>)(?P<promo_piece>)'
 
 def parse_notation(notation):
+    '''
+        Preverimo, ali prejeta notacija ustreza legalni potezi s pomočjo zgornjih
+        regex-ov in vrnemo ustrezni re.match objekt.
+    '''
     if (m := re.fullmatch(R_PIECE, notation)):
         return m
     elif (m := re.fullmatch(R_PAWN, notation)):
@@ -419,12 +423,12 @@ def parse_notation(notation):
         return m
 
 def to_figurine_notation(move, notation_info, *, anno='0'):
+    '''
+        S sprejetima Move in NotationInfo objektoma [ter anotacijo z vrednostjo po PGN standardu],
+        korak po koraku sestavimo figurinsko notacijo.
+    '''
     out = ''
-    if move.piece == Name.Pawn:
-        if notation_info.captures:
-            out += 'abcdefgh'[move.start[1] - 1]
-            out += 'x'
-    elif move.castling:
+    if move.castling:
         if move.target[1] == 7:
             out += 'O-O'
         else:
@@ -437,6 +441,10 @@ def to_figurine_notation(move, notation_info, *, anno='0'):
 
         out += TO_ANNOTATION.get(anno, '')
         return out
+    elif move.piece == Name.Pawn:
+        if notation_info.captures:
+            out += 'abcdefgh'[move.start[1] - 1]
+            out += 'x'
     else:
         if move.color == Color.White:
             out += TO_WHITE_PIECE[move.piece]
@@ -448,7 +456,7 @@ def to_figurine_notation(move, notation_info, *, anno='0'):
             elif not notation_info.rank:
                 out += str(move.start[0])
             else:
-                out += 'abcdefgh'[move.start[1] - 1] + str(move.start[0])
+                out += pos_to_square(move.start)
         if notation_info.captures:
             out += 'x'
 
@@ -470,6 +478,10 @@ def to_figurine_notation(move, notation_info, *, anno='0'):
     return out
 
 def to_algebraic_notation(move, notation_info, *, anno='0'):
+    '''
+        Za algebrajsko notacijo samo pretvorimo figure, prisotne v figurinski notaciji,
+        v velike črke.
+    '''
     algebraic = ''
     for char in to_figurine_notation(move, notation_info, anno=anno):
         algebraic += FROM_FIGURINE_TO_ALGEBRAIC.get(char, char)
