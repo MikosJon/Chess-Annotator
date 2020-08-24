@@ -376,7 +376,7 @@ def launch():
         text = ''
 
         for line in f:
-            for token in line.split(' '):
+            for token in line.split():
                 if in_comment:
                     if token.endswith('}'):
                         in_comment = False
@@ -390,7 +390,7 @@ def launch():
                         in_comment = True
                         text = token[1:]
                         continue
-                    if any(char in token for char in '*-.'):
+                    if token in {'*', '1-0', '0-1', '1/2-1/2'} or token.endswith('.'):
                         continue
 
                     if '$' in token:
@@ -398,7 +398,6 @@ def launch():
                     else:
                         notation = token
                         anno = '0'
-
                     user.game.make_move_from_notation(notation)
                     user.moves.append((*user.game.moves[-1], anno, ''))
 

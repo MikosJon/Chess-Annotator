@@ -84,3 +84,9 @@
         </div>
     </form>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var element = document.getElementById('notation-box');
+        element.scrollTop = Math.max(element.scrollHeight * {{max([2 * move_num / (len(moves)+1), 0])}} - 50, 0);
+    });
+</script>
