@@ -27,6 +27,7 @@ Na zavihku 'Analiza' se nahaja glavni del programa. Tukaj vnašamo poteze, piše
 
 Poteze vnašamo v algebrajski notaciji, sproti se bodo prikazale legalne poteze, ki ustrezajo trenutno vnesenim znakom. Ob strani so prikazane trenutno odigrane poteze, ter gumbi za premikanje po seznamu. Z rumeno je označena zadnja poteza, ki je bila odigrana.
 
+Za vnos nove poteze se je potrebno premakniti do konca odigranih potez, kar najlažje storimo s klikom na skrajno desni navigacijski gumb pod njimi.
 
 ## Nadaljne delo
 * premik po seznamu s klikom na potezo
